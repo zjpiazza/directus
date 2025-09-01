@@ -10,6 +10,7 @@ import { LocationQuery, NavigationGuard } from 'vue-router';
 import { useNavigation } from './composables/use-navigation';
 import CollectionOrItem from './routes/collection-or-item.vue';
 import Item from './routes/item.vue';
+import CustomItem from './routes/custom-item.vue';
 import NoCollections from './routes/no-collections.vue';
 import ItemNotFound from './routes/not-found.vue';
 import Preview from './routes/preview.vue';
@@ -134,6 +135,13 @@ export default defineModule({
 					name: 'content-item',
 					path: ':primaryKey',
 					component: Item,
+					props: true,
+					beforeEnter: checkForSystem,
+				},
+				{
+					name: 'content-custom-item',
+					path: ':primaryKey/custom',
+					component: CustomItem,
 					props: true,
 					beforeEnter: checkForSystem,
 				},

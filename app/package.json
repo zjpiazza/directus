@@ -155,5 +155,11 @@
 		"vue-virtual-scroller": "catalog:",
 		"vuedraggable": "catalog:",
 		"wellknown": "catalog:"
+	},
+	"dependencies": {
+		"@vue-flow/background": "catalog:",
+		"@vue-flow/controls": "catalog:",
+		"@vue-flow/core": "catalog:",
+		"@vue-flow/minimap": "catalog:"
 	}
 }

@@ -41,6 +41,24 @@ fields:
       collectionField: collection
     width: full
 
+  - field: custom_item_component
+    interface: select-dropdown
+    options:
+      choices:
+        - text: $t:field_options.directus_collections.default_editor
+          value: null
+        - text: $t:field_options.directus_collections.custom_editor_basic
+          value: custom-basic
+        - text: $t:field_options.directus_collections.custom_editor_advanced
+          value: custom-advanced
+        - text: $t:field_options.directus_collections.custom_editor_tabbed
+          value: custom-tabbed
+        - text: $t:field_options.directus_collections.visual_flow_builder
+          value: visual-flow-builder
+      placeholder: $t:field_options.directus_collections.custom_component_placeholder
+      allowOther: true
+    width: full
+
   - field: hidden
     special:
       - cast-boolean
