@@ -29,6 +29,7 @@ import CustomBasic from '../../../components/custom-editors/custom-basic.vue';
 import CustomAdvanced from '../../../components/custom-editors/custom-advanced.vue';
 import CustomTabbed from '../../../components/custom-editors/custom-tabbed.vue';
 import VisualFlowBuilder from '../../../components/custom-editors/visual-flow-builder.vue';
+import ProcessMap from '../../../components/custom-editors/process-map.vue';
 
 interface Props {
 	collection: string;
@@ -123,6 +124,7 @@ const customComponents = {
 	'custom-advanced': CustomAdvanced,
 	'custom-tabbed': CustomTabbed,
 	'visual-flow-builder': VisualFlowBuilder,
+	'process-map': ProcessMap,
 };
 
 // Get the actual component to render

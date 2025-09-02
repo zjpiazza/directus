@@ -55,6 +55,8 @@ fields:
           value: custom-tabbed
         - text: $t:field_options.directus_collections.visual_flow_builder
           value: visual-flow-builder
+        - text: $t:field_options.directus_collections.process_map
+          value: process-map
       placeholder: $t:field_options.directus_collections.custom_component_placeholder
       allowOther: true
     width: full
