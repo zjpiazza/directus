@@ -6,7 +6,6 @@ import { Controls } from '@vue-flow/controls';
 import { Background } from '@vue-flow/background';
 import type { Field, ValidationError } from '@directus/types';
 import { useApi } from '@directus/composables';
-import { router } from '@/router';
 
 // Import your custom node components
 import TerminalNode from '../flow-nodes/TerminalNode.vue';
@@ -76,8 +75,15 @@ const fetchWorkflows = async () => {
 
 // Handle workflow navigation
 const navigateToWorkflow = (workflowId: string) => {
-	// Navigate to the selected workflow
-	router.push(`/content/${props.collection}/${workflowId}`);
+	// Update the field data to ensure current state is saved
+	updateField('flow_data', {
+		nodes: flowNodes.value,
+		edges: flowEdges.value,
+	});
+	
+	// Use the correct Directus URL format for collections
+	const targetUrl = `/admin/content/${props.collection}/${workflowId}`;
+	window.location.href = targetUrl;
 };
 
 // Vue Flow composable
@@ -816,8 +822,58 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 	cursor: pointer;
 }
 
+/* Remove default selection style */
 .canvas-container :deep(.vue-flow__node.selected) {
-	box-shadow: 0 0 0 2px var(--theme--primary);
+	box-shadow: none;
+}
+
+/* Terminal node selection - oval outline */
+.canvas-container :deep(.vue-flow__node.selected .terminal-node) {
+	outline: 3px solid var(--theme--primary);
+	outline-offset: 2px;
+}
+
+/* Process node selection - rectangular outline */
+.canvas-container :deep(.vue-flow__node.selected .process-node) {
+	outline: 3px solid var(--theme--primary);
+	outline-offset: 2px;
+}
+
+/* Decision node selection - diamond outline using clip-path */
+.canvas-container :deep(.vue-flow__node.selected .decision-node) {
+	position: relative;
+}
+
+.canvas-container :deep(.vue-flow__node.selected .decision-node::after) {
+	content: '';
+	position: absolute;
+	top: -4px;
+	left: -4px;
+	right: -4px;
+	bottom: -4px;
+	background: transparent;
+	border: 3px solid var(--theme--primary);
+	clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+	pointer-events: none;
+}
+
+/* Off-page node selection - more visible pentagon outline */
+.canvas-container :deep(.vue-flow__node.selected .offpage-node) {
+	position: relative;
+}
+
+.canvas-container :deep(.vue-flow__node.selected .offpage-node::after) {
+	content: '';
+	position: absolute;
+	top: -4px;
+	left: -4px;
+	right: -4px;
+	bottom: -4px;
+	background: transparent;
+	border: 4px solid var(--theme--primary);
+	clip-path: polygon(0% 15%, 15% 0%, 85% 0%, 100% 15%, 100% 100%, 0% 100%);
+	pointer-events: none;
+	box-shadow: 0 0 8px rgba(var(--theme--primary-rgb), 0.3);
 }
 
 .canvas-container :deep(.vue-flow__edge) {
