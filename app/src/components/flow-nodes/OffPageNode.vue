@@ -1,5 +1,5 @@
 <template>
-	<div class="offpage-node" :class="{ selected: selected }">
+	<div class="offpage-node" :class="{ selected: selected, 'has-target': data.targetWorkflowId }" @click="handleClick">
 		<div class="node-header">
 			<v-icon name="home" class="node-icon" />
 			<span class="node-title">{{ data.label || 'Off-page' }}</span>
@@ -7,8 +7,11 @@
 		<div v-if="data.description" class="node-description">
 			{{ data.description }}
 		</div>
-		<div v-if="data.targetWorkflow" class="target-workflow">
-			→ {{ data.targetWorkflow }}
+		<div v-if="data.targetWorkflowId" class="target-workflow">
+			→ {{ getWorkflowName(data.targetWorkflowId) }}
+		</div>
+		<div v-else class="no-target">
+			Select workflow in properties
 		</div>
 
 		<Handle
@@ -26,6 +29,7 @@
 </template>
 
 <script setup lang="ts">
+import { inject } from 'vue';
 import { Handle, Position } from '@vue-flow/core';
 
 interface Props {
@@ -33,12 +37,30 @@ interface Props {
 	data: {
 		label?: string;
 		description?: string;
-		targetWorkflow?: string;
+		targetWorkflowId?: string;
 	};
 	selected?: boolean;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
+const emit = defineEmits<{
+	navigate: [workflowId: string];
+}>();
+
+// Get workflow data from parent component
+const availableWorkflows = inject('availableWorkflows') as any;
+
+const getWorkflowName = (workflowId: string) => {
+	if (!availableWorkflows?.value) return 'Unknown Workflow';
+	const workflow = availableWorkflows.value.find((w: any) => w.id === workflowId);
+	return workflow?.name || 'Unknown Workflow';
+};
+
+const handleClick = () => {
+	if (props.data.targetWorkflowId) {
+		emit('navigate', props.data.targetWorkflowId);
+	}
+};
 </script>
 
 <style scoped>
@@ -99,5 +121,31 @@ defineProps<Props>();
 	margin-top: 4px;
 	opacity: 0.8;
 	font-style: italic;
+	color: #fef3c7;
+}
+
+.offpage-node.has-target {
+	cursor: pointer;
+}
+
+.offpage-node.has-target:hover {
+	transform: scale(1.05);
+	box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4);
+}
+
+.offpage-node.has-target .target-workflow {
+	color: #fef3c7;
+	font-weight: 600;
+}
+
+.no-target {
+	font-size: 11px;
+	margin-top: 4px;
+	opacity: 0.7;
+	font-style: italic;
+	color: #fef3c7;
+	border: 1px dashed rgba(255, 255, 255, 0.3);
+	padding: 2px 4px;
+	border-radius: 3px;
 }
 </style>

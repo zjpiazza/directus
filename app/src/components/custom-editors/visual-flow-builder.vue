@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, ref, watch, nextTick } from 'vue';
+import { computed, ref, watch, nextTick, provide, onMounted } from 'vue';
 import { VueFlow, type Node, type Edge, type Connection, type EdgeUpdateEvent, useVueFlow } from '@vue-flow/core';
 import { Controls } from '@vue-flow/controls';
 import { Background } from '@vue-flow/background';
 import type { Field, ValidationError } from '@directus/types';
+import { useApi } from '@directus/composables';
+import { router } from '@/router';
 
 // Import your custom node components
 import TerminalNode from '../flow-nodes/TerminalNode.vue';
@@ -32,6 +34,50 @@ const emit = defineEmits<{
 	save: [];
 	refresh: [];
 }>();
+
+// API and navigation setup
+const api = useApi();
+const currentWorkflowId = computed(() => props.primaryKey || props.item?.id || 'new');
+const availableWorkflows = ref<Array<{ id: string; name: string }>>([]);
+
+// Provide API and current workflow ID to child components
+provide('api', api);
+provide('currentWorkflowId', currentWorkflowId.value);
+provide('collection', props.collection);
+provide('availableWorkflows', availableWorkflows);
+
+// Fetch available workflows from Directus
+const fetchWorkflows = async () => {
+	try {
+		if (!api) {
+			console.warn('API not available for fetching workflows');
+			return;
+		}
+
+		// Use the current collection for fetching other workflows
+		const response = await api.get(`/items/${props.collection}`, {
+			params: {
+				fields: ['id', 'name'],
+				filter: {
+					id: {
+						_neq: currentWorkflowId.value // Exclude current workflow
+					}
+				}
+			}
+		});
+
+		availableWorkflows.value = response.data.data || [];
+	} catch (error) {
+		console.error('Failed to fetch workflows:', error);
+		availableWorkflows.value = [];
+	}
+};
+
+// Handle workflow navigation
+const navigateToWorkflow = (workflowId: string) => {
+	// Navigate to the selected workflow
+	router.push(`/content/${props.collection}/${workflowId}`);
+};
 
 // Vue Flow instance
 const { project, fitView } = useVueFlow();
@@ -85,6 +131,11 @@ const nodeTypes = [
 ];
 
 const hasChanges = computed(() => Object.keys(props.edits).length > 0);
+
+// Fetch workflows on component mount
+onMounted(() => {
+	fetchWorkflows();
+});
 
 // Initialize flow data from item
 watch(() => props.item, (newItem) => {
@@ -224,6 +275,19 @@ function updateNodeData() {
 	flowNodes.value = [...flowNodes.value];
 }
 
+function updateOffPageTarget(workflowId: string) {
+	if (selectedNode.value && selectedNode.value.type === 'offpage') {
+		selectedNode.value.data.targetWorkflowId = workflowId;
+		updateNodeData();
+		
+		// Save the changes
+		updateField('flow_data', {
+			nodes: flowNodes.value,
+			edges: flowEdges.value,
+		});
+	}
+}
+
 function deleteSelectedNode() {
 	if (selectedNode.value) {
 		const nodeId = selectedNode.value.id;
@@ -352,7 +416,10 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 							<DecisionNode v-bind="nodeProps" />
 						</template>
 						<template #node-offpage="nodeProps">
-							<OffPageNode v-bind="nodeProps" />
+							<OffPageNode 
+								v-bind="nodeProps" 
+								@navigate="navigateToWorkflow"
+							/>
 						</template>
 
 						<!-- Controls -->
@@ -391,6 +458,29 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 							<div class="property-group">
 								<label>Type</label>
 								<v-input :model-value="selectedNode.type" readonly />
+							</div>
+
+							<!-- Off-page Connector Workflow Selection -->
+							<div v-if="selectedNode.type === 'offpage'" class="property-group">
+								<label>Target Workflow</label>
+								<v-select
+									:model-value="selectedNode.data.targetWorkflowId"
+									:items="availableWorkflows"
+									item-text="name"
+									item-value="id"
+									placeholder="Select workflow to link to..."
+									@update:model-value="updateOffPageTarget"
+								/>
+								<v-button
+									v-if="selectedNode.data.targetWorkflowId"
+									kind="secondary"
+									small
+									@click="navigateToWorkflow(selectedNode.data.targetWorkflowId)"
+									style="margin-top: 8px;"
+								>
+									<v-icon name="open_in_new" style="margin-right: 4px;" />
+									Open Workflow
+								</v-button>
 							</div>
 
 							<!-- Delete Node Button -->
