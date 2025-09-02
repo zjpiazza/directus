@@ -73,6 +73,27 @@ const fetchWorkflows = async () => {
 	}
 };
 
+// Function to fetch available collections for form nodes
+const fetchCollections = async () => {
+	try {
+		const response = await api.get('/collections', {
+			params: {
+				fields: ['collection', 'meta.name']
+			}
+		});
+
+		availableCollections.value = response.data.data
+			.filter((collection: any) => !collection.collection.startsWith('directus_')) // Filter out system collections
+			.map((collection: any) => ({
+				value: collection.collection,
+				text: collection.meta?.name || collection.collection
+			}));
+	} catch (error) {
+		console.error('Failed to fetch collections:', error);
+		availableCollections.value = [];
+	}
+};
+
 // Handle workflow navigation
 const navigateToWorkflow = (workflowId: string) => {
 	// Update the field data to ensure current state is saved
@@ -91,6 +112,7 @@ const { project, fitView, updateEdge } = useVueFlow();
 
 // Flow state
 const selectedNode = ref<Node | null>(null);
+const availableCollections = ref<any[]>([]);
 const flowNodes = ref<Node[]>([
 	// Initialize with some example nodes for testing
 	{
@@ -132,16 +154,18 @@ const flowEdges = ref<Edge[]>([
 // Node types for the palette
 const nodeTypes = [
 	{ type: 'terminal', label: 'Terminal', icon: 'radio_button_checked' }, // Start/End (oval)
-	{ type: 'process', label: 'Process', icon: 'crop_square' }, // Process (rectangle)
+	{ type: 'process', subtype: 'task', label: 'Task', icon: 'crop_square' }, // Task process (blue rectangle)
+	{ type: 'process', subtype: 'form', label: 'Form', icon: 'description' }, // Form process (green rectangle)
 	{ type: 'decision', label: 'Decision', icon: 'change_history' }, // Decision (diamond)
 	{ type: 'offpage', label: 'Off-page Connector', icon: 'home' }, // Off-page connector (house shape)
 ];
 
 const hasChanges = computed(() => Object.keys(props.edits).length > 0);
 
-// Fetch workflows on component mount
+// Fetch workflows and collections on component mount
 onMounted(() => {
 	fetchWorkflows();
+	fetchCollections();
 });
 
 // Initialize flow data from item
@@ -266,6 +290,8 @@ function onDrop(event: DragEvent) {
 			data: {
 				label: `${nodeType.label} Node`, // Also in data for custom nodes
 				description: '',
+				...(nodeType.subtype && { subtype: nodeType.subtype }), // Add subtype if present
+				...(nodeType.subtype === 'form' && { targetCollection: '' }), // Initialize targetCollection for form nodes
 			},
 		};
 
@@ -285,6 +311,23 @@ function onEdgeClick(_event: any) {
 function updateNodeData() {
 	// Trigger reactivity
 	flowNodes.value = [...flowNodes.value];
+}
+
+function updateProcessSubtype(subtype: 'task' | 'form') {
+	if (selectedNode.value && selectedNode.value.type === 'process') {
+		selectedNode.value.data.subtype = subtype;
+		if (subtype === 'form' && !selectedNode.value.data.targetCollection) {
+			selectedNode.value.data.targetCollection = '';
+		}
+		updateNodeData();
+	}
+}
+
+function updateFormCollection(collectionName: string) {
+	if (selectedNode.value && selectedNode.value.type === 'process' && selectedNode.value.data.subtype === 'form') {
+		selectedNode.value.data.targetCollection = collectionName;
+		updateNodeData();
+	}
 }
 
 function updateOffPageTarget(workflowId: string) {
@@ -489,6 +532,32 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 							<div class="property-group">
 								<label>Type</label>
 								<v-input :model-value="selectedNode.type" readonly />
+							</div>
+
+							<!-- Process Node Subtype for Form/Task -->
+							<div v-if="selectedNode.type === 'process'" class="property-group">
+								<label>Process Type</label>
+								<v-select
+									:model-value="selectedNode.data.subtype || 'task'"
+									:items="[
+										{ text: 'Task', value: 'task' },
+										{ text: 'Form', value: 'form' }
+									]"
+									@update:model-value="updateProcessSubtype"
+								/>
+							</div>
+
+							<!-- Form Collection Selection -->
+							<div v-if="selectedNode.type === 'process' && selectedNode.data.subtype === 'form'" class="property-group">
+								<label>Target Collection</label>
+								<v-select
+									:model-value="selectedNode.data.targetCollection"
+									:items="availableCollections"
+									item-text="text"
+									item-value="value"
+									placeholder="Select collection for form..."
+									@update:model-value="updateFormCollection"
+								/>
 							</div>
 
 							<!-- Off-page Connector Workflow Selection -->

@@ -1,11 +1,15 @@
 <template>
-	<div class="process-node" :class="{ selected: selected }">
+	<div class="process-node" :class="{ selected: selected, [`subtype-${data.subtype || 'task'}`]: true }">
 		<div class="node-header">
-			<v-icon name="crop_square" class="node-icon" />
-			<span class="node-title">{{ data.label || 'Process' }}</span>
+			<v-icon :name="getSubtypeIcon()" class="node-icon" />
+			<span class="node-title">{{ data.label || getDefaultLabel() }}</span>
 		</div>
 		<div v-if="data.description" class="node-description">
 			{{ data.description }}
+		</div>
+		<div v-if="data.subtype === 'form' && data.targetCollection" class="node-collection">
+			<v-icon name="folder" size="small" />
+			{{ data.targetCollection }}
 		</div>
 
 		<!-- Handles on all sides - all same type for maximum flexibility -->
@@ -13,25 +17,25 @@
 			id="top"
 			type="source"
 			:position="Position.Top"
-			:style="{ background: '#3b82f6' }"
+			:style="{ background: getSubtypeColor() }"
 		/>
 		<Handle
 			id="right"
 			type="source"
 			:position="Position.Right"
-			:style="{ background: '#3b82f6' }"
+			:style="{ background: getSubtypeColor() }"
 		/>
 		<Handle
 			id="bottom"
 			type="source"
 			:position="Position.Bottom"
-			:style="{ background: '#3b82f6' }"
+			:style="{ background: getSubtypeColor() }"
 		/>
 		<Handle
 			id="left"
 			type="source"
 			:position="Position.Left"
-			:style="{ background: '#3b82f6' }"
+			:style="{ background: getSubtypeColor() }"
 		/>
 	</div>
 </template>
@@ -44,11 +48,29 @@ interface Props {
 	data: {
 		label?: string;
 		description?: string;
+		subtype?: 'task' | 'form';
+		targetCollection?: string;
 	};
 	selected?: boolean;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
+
+// Helper functions for subtype-specific display
+function getSubtypeIcon() {
+	const subtype = props.data.subtype || 'task';
+	return subtype === 'form' ? 'description' : 'crop_square';
+}
+
+function getDefaultLabel() {
+	const subtype = props.data.subtype || 'task';
+	return subtype === 'form' ? 'Form' : 'Task';
+}
+
+function getSubtypeColor() {
+	const subtype = props.data.subtype || 'task';
+	return subtype === 'form' ? '#10b981' : '#3b82f6'; // Green for form, blue for task
+}
 </script>
 
 <style scoped>
@@ -96,5 +118,32 @@ defineProps<Props>();
 	opacity: 0.9;
 	margin-top: 4px;
 	line-height: 1.3;
+}
+
+.node-collection {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 11px;
+	opacity: 0.8;
+	margin-top: 4px;
+	padding: 2px 6px;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 3px;
+}
+
+/* Subtype-specific styling */
+.process-node.subtype-form {
+	background: linear-gradient(135deg, #10b981 0%, #047857 100%);
+	border-color: #065f46;
+	box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.process-node.subtype-form:hover {
+	box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
+}
+
+.process-node.subtype-form.selected {
+	box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.4);
 }
 </style>
