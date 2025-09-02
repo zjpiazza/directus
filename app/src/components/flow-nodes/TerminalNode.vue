@@ -8,19 +8,30 @@
 			{{ data.description }}
 		</div>
 
-		<!-- Only output handle for start nodes, only input for end nodes -->
+		<!-- Handles on all sides - all same type for maximum flexibility -->
 		<Handle
-			v-if="data.terminalType !== 'end'"
+			id="top"
+			type="source"
+			:position="Position.Top"
+			:style="{ background: '#10b981' }"
+		/>
+		<Handle
+			id="left"
+			type="source"
+			:position="Position.Left"
+			:style="{ background: '#10b981' }"
+		/>
+		<Handle
+			id="bottom"
 			type="source"
 			:position="Position.Bottom"
 			:style="{ background: '#10b981' }"
 		/>
-
 		<Handle
-			v-if="data.terminalType !== 'start'"
-			type="target"
-			:position="Position.Top"
-			:style="{ background: '#ef4444' }"
+			id="right"
+			type="source"
+			:position="Position.Right"
+			:style="{ background: '#10b981' }"
 		/>
 	</div>
 </template>

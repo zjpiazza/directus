@@ -8,18 +8,30 @@
 			{{ data.description }}
 		</div>
 
-		<!-- Input Handle -->
+		<!-- Handles on all sides - all same type for maximum flexibility -->
 		<Handle
-			type="target"
+			id="top"
+			type="source"
 			:position="Position.Top"
-			:style="{ background: '#555' }"
+			:style="{ background: '#3b82f6' }"
 		/>
-
-		<!-- Output Handle -->
 		<Handle
+			id="right"
+			type="source"
+			:position="Position.Right"
+			:style="{ background: '#3b82f6' }"
+		/>
+		<Handle
+			id="bottom"
 			type="source"
 			:position="Position.Bottom"
-			:style="{ background: '#555' }"
+			:style="{ background: '#3b82f6' }"
+		/>
+		<Handle
+			id="left"
+			type="source"
+			:position="Position.Left"
+			:style="{ background: '#3b82f6' }"
 		/>
 	</div>
 </template>

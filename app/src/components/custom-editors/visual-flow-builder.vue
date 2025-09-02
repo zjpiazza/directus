@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, nextTick, provide, onMounted } from 'vue';
-import { VueFlow, type Node, type Edge, type Connection, type EdgeUpdateEvent, useVueFlow } from '@vue-flow/core';
+import { VueFlow, ConnectionMode, useVueFlow } from '@vue-flow/core';
+import type { Node, Edge, EdgeUpdateEvent, Connection } from '@vue-flow/core';
 import { Controls } from '@vue-flow/controls';
 import { Background } from '@vue-flow/background';
 import type { Field, ValidationError } from '@directus/types';
@@ -79,8 +80,8 @@ const navigateToWorkflow = (workflowId: string) => {
 	router.push(`/content/${props.collection}/${workflowId}`);
 };
 
-// Vue Flow instance
-const { project, fitView } = useVueFlow();
+// Vue Flow composable
+const { project, fitView, updateEdge } = useVueFlow();
 
 // Flow state
 const selectedNode = ref<Node | null>(null);
@@ -310,12 +311,26 @@ function onConnect(connection: Connection) {
 }
 
 function onEdgeUpdate(event: EdgeUpdateEvent) {
+	console.log('onEdgeUpdate called with:', event);
 	const { edge: oldEdge, connection: newConnection } = event;
-	const index = flowEdges.value.findIndex((edge: Edge) => edge.id === oldEdge.id);
+	
+	console.log('Old edge:', oldEdge, 'New connection:', newConnection);
 
-	if (index !== -1) {
-		flowEdges.value[index] = { ...oldEdge, ...newConnection };
-	}
+	// Use Vue Flow's built-in updateEdge function
+	updateEdge(oldEdge, newConnection);
+	
+	console.log('Used Vue Flow updateEdge function');
+	
+	// Save the changes to the field data after a short delay to ensure Vue Flow has updated
+	nextTick(() => {
+		updateField('flow_data', {
+			nodes: flowNodes.value,
+			edges: flowEdges.value,
+		});
+		
+		console.log('Field data updated and saved in nextTick');
+		console.log('Current edges:', flowEdges.value);
+	});
 }
 </script>
 
@@ -389,6 +404,7 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 						:nodes-draggable="true"
 						:edges-updatable="true"
 						:edges-reconnectable="true"
+						:connection-mode="ConnectionMode.Loose"
 						:elements-selectable="true"
 						:default-viewport="{ x: 0, y: 0, zoom: 1 }"
 						:min-zoom="0.1"
@@ -404,6 +420,8 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 						@edge-click="onEdgeClick"
 						@connect="onConnect"
 						@edge-update="onEdgeUpdate"
+						@edge-update-start="(event) => console.log('Edge update start:', event)"
+						@edge-update-end="(event) => console.log('Edge update end:', event)"
 					>
 						<!-- Custom Node Templates -->
 						<template #node-terminal="nodeProps">
@@ -497,21 +515,6 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 						</div>
 						<div v-else class="no-selection">
 							<p>Select a node to edit its properties</p>
-						</div>
-					</div>
-
-					<!-- Flow Statistics -->
-					<div class="sidebar-section">
-						<h3>Flow Stats</h3>
-						<div class="stats-grid">
-							<div class="stat-item">
-								<span class="stat-label">Nodes</span>
-								<span class="stat-value">{{ flowNodes.length }}</span>
-							</div>
-							<div class="stat-item">
-								<span class="stat-label">Connections</span>
-								<span class="stat-value">{{ flowEdges.length }}</span>
-							</div>
 						</div>
 					</div>
 				</div>

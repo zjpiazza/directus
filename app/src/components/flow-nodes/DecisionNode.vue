@@ -10,26 +10,30 @@
 			</div>
 		</div>
 
-		<!-- Input Handle -->
+		<!-- Handles on all sides - all same type for maximum flexibility -->
 		<Handle
-			type="target"
+			id="top"
+			type="source"
 			:position="Position.Top"
-			:style="{ background: '#f59e0b' }"
+			:style="{ background: '#ef4444' }"
 		/>
-
-		<!-- Output Handles for Yes/No -->
 		<Handle
-			id="yes"
+			id="right"
 			type="source"
 			:position="Position.Right"
-			:style="{ background: '#10b981', top: '40%' }"
+			:style="{ background: '#ef4444' }"
 		/>
-
 		<Handle
-			id="no"
+			id="bottom"
+			type="source"
+			:position="Position.Bottom"
+			:style="{ background: '#ef4444' }"
+		/>
+		<Handle
+			id="left"
 			type="source"
 			:position="Position.Left"
-			:style="{ background: '#ef4444', top: '40%' }"
+			:style="{ background: '#ef4444' }"
 		/>
 	</div>
 </template>
