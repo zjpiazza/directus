@@ -9,7 +9,7 @@ import type { Field, ValidationError } from '@directus/types';
 import TerminalNode from '../flow-nodes/TerminalNode.vue';
 import ProcessNode from '../flow-nodes/ProcessNode.vue';
 import DecisionNode from '../flow-nodes/DecisionNode.vue';
-import ConnectorNode from '../flow-nodes/ConnectorNode.vue';
+import OffPageNode from '../flow-nodes/OffPageNode.vue';
 
 interface Props {
 	collection: string;
@@ -78,10 +78,10 @@ const flowEdges = ref<Edge[]>([
 
 // Node types for the palette
 const nodeTypes = [
-	{ type: 'terminal', label: 'Terminal', icon: 'radio_button_checked' },
-	{ type: 'process', label: 'Process', icon: 'settings' },
-	{ type: 'decision', label: 'Decision', icon: 'help' },
-	{ type: 'connector', label: 'Connector', icon: 'circle' },
+	{ type: 'terminal', label: 'Terminal', icon: 'radio_button_checked' }, // Start/End (oval)
+	{ type: 'process', label: 'Process', icon: 'crop_square' }, // Process (rectangle)
+	{ type: 'decision', label: 'Decision', icon: 'change_history' }, // Decision (diamond)
+	{ type: 'offpage', label: 'Off-page Connector', icon: 'home' }, // Off-page connector (house shape)
 ];
 
 const hasChanges = computed(() => Object.keys(props.edits).length > 0);
@@ -256,7 +256,8 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 </script>
 
 <template>
-	<div class="visual-flow-builder-editor">
+	<div class="visual-flow-builder-wrapper">
+		<div class="visual-flow-builder-editor">
 		<!-- Header -->
 		<div class="editor-header">
 			<div class="title-section">
@@ -298,7 +299,7 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 							:key="nodeType.type"
 							class="node-item"
 							:class="nodeType.type"
-							draggable
+							draggable="true"
 							@dragstart="onDragStart($event, nodeType)"
 						>
 							<div class="node-preview">
@@ -310,7 +311,12 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 				</div>
 
 				<!-- Center - Vue Flow Canvas -->
-				<div class="canvas-container">
+				<div 
+					class="canvas-container"
+					@drop="onDrop"
+					@dragover="onDragOver"
+					@dragleave="onDragLeave"
+				>
 					<VueFlow
 						v-model:nodes="flowNodes"
 						v-model:edges="flowEdges"
@@ -328,13 +334,10 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 						:zoom-on-scroll="true"
 						:zoom-on-pinch="true"
 						:pan-on-drag="[1, 2]"
-						:selection-key-code="'Shift'"
+						:multi-selection-key-code="true"
 						:zoom-on-double-click="false"
 						@node-click="onNodeClick"
 						@edge-click="onEdgeClick"
-						@drop="onDrop"
-						@dragover="onDragOver"
-						@dragleave="onDragLeave"
 						@connect="onConnect"
 						@edge-update="onEdgeUpdate"
 					>
@@ -348,8 +351,8 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 						<template #node-decision="nodeProps">
 							<DecisionNode v-bind="nodeProps" />
 						</template>
-						<template #node-connector="nodeProps">
-							<ConnectorNode v-bind="nodeProps" />
+						<template #node-offpage="nodeProps">
+							<OffPageNode v-bind="nodeProps" />
 						</template>
 
 						<!-- Controls -->
@@ -435,6 +438,7 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 			</ul>
 		</div>
 	</div>
+	</div>
 </template>
 
 <style>
@@ -449,11 +453,20 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 </style>
 
 <style scoped>
+.visual-flow-builder-wrapper {
+	width: 100%;
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+}
+
 .visual-flow-builder-editor {
-	height: 100vh;
+	height: 100%;
 	display: flex;
 	flex-direction: column;
 	background: var(--theme--background);
+	flex: 1;
+	overflow: hidden;
 }
 
 .editor-header {
@@ -497,13 +510,14 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 	display: grid;
 	grid-template-columns: 250px 1fr 300px;
 	height: 100%;
+	overflow: hidden;
 }
 
 .node-palette {
 	background: var(--theme--background-subdued);
 	border-right: 1px solid var(--theme--border-color);
 	padding: 1.5rem;
-	overflow-y: auto;
+	overflow: hidden;
 	z-index: 10;
 }
 
@@ -531,6 +545,12 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 	cursor: grab;
 	transition: all 0.2s;
 	min-height: 60px;
+	user-select: none;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	/* Ensure drag events work */
+	-webkit-user-drag: element;
 }
 
 .node-item:hover {
@@ -563,6 +583,10 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 	font-size: 0.9rem;
 	font-weight: 500;
 	color: var(--theme--foreground);
+	user-select: none;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
 }
 
 .canvas-container {

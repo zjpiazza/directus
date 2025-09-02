@@ -43,20 +43,32 @@ defineProps<Props>();
 
 <style scoped>
 .terminal-node {
-	background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+	background: linear-gradient(135deg, #10b981 0%, #059669 100%);
 	color: white;
-	border: 2px solid #4c1d95;
-	border-radius: 50px;
-	padding: 12px 16px;
-	min-width: 100px;
+	border: 2px solid #047857;
+	border-radius: 50px; /* Perfect oval/ellipse shape */
+	padding: 12px 20px;
+	min-width: 120px;
+	min-height: 60px;
 	text-align: center;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-	transition: all 0.2s;
+	font-weight: 500;
+	cursor: pointer;
+	transition: all 0.2s ease;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+}
+
+.terminal-node:hover {
+	transform: scale(1.05);
+	box-shadow: 0 8px 25px rgba(16, 185, 129, 0.3);
 }
 
 .terminal-node.selected {
-	border-color: #fbbf24;
-	box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.3);
+	border-color: #ffffff;
+	box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.4);
 	transform: scale(1.05);
 }
 
@@ -68,7 +80,6 @@ defineProps<Props>();
 }
 
 .node-icon {
-	color: #fbbf24;
 	font-size: 16px;
 }
 

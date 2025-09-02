@@ -2,7 +2,7 @@
 	<div class="decision-node" :class="{ selected: selected }">
 		<div class="diamond-shape">
 			<div class="node-content">
-				<v-icon name="help" class="node-icon" />
+				<v-icon name="change_history" class="node-icon" />
 				<span class="node-title">{{ data.label || 'Decision' }}</span>
 				<div v-if="data.description" class="node-description">
 					{{ data.description }}
@@ -59,20 +59,26 @@ defineProps<Props>();
 .diamond-shape {
 	width: 100%;
 	height: 100%;
-	background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-	border: 2px solid #d97706;
+	background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+	border: 2px solid #b91c1c;
 	transform: rotate(45deg);
 	border-radius: 8px;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-	transition: all 0.2s;
+	box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+	transition: all 0.2s ease;
 	display: flex;
 	align-items: center;
 	justify-content: center;
+	cursor: pointer;
+}
+
+.diamond-shape:hover {
+	transform: rotate(45deg) scale(1.05);
+	box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
 }
 
 .decision-node.selected .diamond-shape {
-	border-color: #6366f1;
-	box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.3);
+	border-color: #ffffff;
+	box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.4);
 	transform: rotate(45deg) scale(1.05);
 }
 

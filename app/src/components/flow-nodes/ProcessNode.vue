@@ -1,7 +1,7 @@
 <template>
 	<div class="process-node" :class="{ selected: selected }">
 		<div class="node-header">
-			<v-icon name="settings" class="node-icon" />
+			<v-icon name="crop_square" class="node-icon" />
 			<span class="node-title">{{ data.label || 'Process' }}</span>
 		</div>
 		<div v-if="data.description" class="node-description">
@@ -41,18 +41,26 @@ defineProps<Props>();
 
 <style scoped>
 .process-node {
-	background: #ffffff;
-	border: 2px solid #1a192b;
-	border-radius: 8px;
-	padding: 12px;
+	background: linear-gradient(135deg, #3b82f6 0%, #1e40af 100%);
+	color: white;
+	border: 2px solid #1e3a8a;
+	border-radius: 6px; /* Sharp rectangle shape */
+	padding: 12px 16px;
 	min-width: 120px;
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-	transition: all 0.2s;
+	min-height: 60px;
+	box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+	transition: all 0.2s ease;
+	cursor: pointer;
+}
+
+.process-node:hover {
+	transform: scale(1.05);
+	box-shadow: 0 8px 25px rgba(59, 130, 246, 0.3);
 }
 
 .process-node.selected {
-	border-color: #6366f1;
-	box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+	border-color: #ffffff;
+	box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.4);
 }
 
 .node-header {
@@ -63,19 +71,17 @@ defineProps<Props>();
 }
 
 .node-icon {
-	color: #6366f1;
 	font-size: 16px;
 }
 
 .node-title {
 	font-weight: 600;
-	color: #1a192b;
 	font-size: 14px;
 }
 
 .node-description {
 	font-size: 12px;
-	color: #6b7280;
+	opacity: 0.9;
 	margin-top: 4px;
 	line-height: 1.3;
 }
