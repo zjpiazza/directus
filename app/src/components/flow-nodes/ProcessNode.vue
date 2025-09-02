@@ -7,9 +7,15 @@
 		<div v-if="data.description" class="node-description">
 			{{ data.description }}
 		</div>
-		<div v-if="data.subtype === 'form' && data.targetCollection" class="node-collection">
+		<div 
+			v-if="data.subtype === 'form' && data.targetCollection" 
+			class="node-collection clickable"
+			@click.stop="openCollection"
+			title="Click to open collection"
+		>
 			<v-icon name="folder" size="small" />
 			{{ data.targetCollection }}
+			<v-icon name="open_in_new" size="x-small" class="open-icon" />
 		</div>
 
 		<!-- Handles on all sides - all same type for maximum flexibility -->
@@ -55,6 +61,9 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+const emit = defineEmits<{
+	'open-collection': [collection: string];
+}>();
 
 // Helper functions for subtype-specific display
 function getSubtypeIcon() {
@@ -70,6 +79,12 @@ function getDefaultLabel() {
 function getSubtypeColor() {
 	const subtype = props.data.subtype || 'task';
 	return subtype === 'form' ? '#10b981' : '#3b82f6'; // Green for form, blue for task
+}
+
+function openCollection() {
+	if (props.data.targetCollection) {
+		emit('open-collection', props.data.targetCollection);
+	}
 }
 </script>
 
@@ -130,6 +145,22 @@ function getSubtypeColor() {
 	padding: 2px 6px;
 	background: rgba(255, 255, 255, 0.1);
 	border-radius: 3px;
+}
+
+.node-collection.clickable {
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.node-collection.clickable:hover {
+	opacity: 1;
+	background: rgba(255, 255, 255, 0.2);
+	transform: translateY(-1px);
+}
+
+.node-collection .open-icon {
+	opacity: 0.7;
+	margin-left: auto;
 }
 
 /* Subtype-specific styling */

@@ -102,9 +102,17 @@ const navigateToWorkflow = (workflowId: string) => {
 		edges: flowEdges.value,
 	});
 	
-	// Use the correct Directus URL format for collections
+	// Use the correct Directus URL format for collections and open in new tab
 	const targetUrl = `/admin/content/${props.collection}/${workflowId}`;
-	window.location.href = targetUrl;
+	window.open(targetUrl, '_blank');
+};
+
+// Handle collection opening in new window
+const openCollection = (collectionName: string) => {
+	// Construct the URL for creating a new entry in the collection
+	const collectionUrl = `/admin/content/${collectionName}/+`;
+	// Open in a new window/tab
+	window.open(collectionUrl, '_blank');
 };
 
 // Vue Flow composable
@@ -113,6 +121,7 @@ const { project, fitView, updateEdge } = useVueFlow();
 // Flow state
 const selectedNode = ref<Node | null>(null);
 const availableCollections = ref<any[]>([]);
+const showDescriptionModal = ref(false);
 const flowNodes = ref<Node[]>([
 	// Initialize with some example nodes for testing
 	{
@@ -484,7 +493,10 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 							<TerminalNode v-bind="nodeProps" />
 						</template>
 						<template #node-process="nodeProps">
-							<ProcessNode v-bind="nodeProps" />
+							<ProcessNode 
+								v-bind="nodeProps" 
+								@open-collection="openCollection"
+							/>
 						</template>
 						<template #node-decision="nodeProps">
 							<DecisionNode v-bind="nodeProps" />
@@ -509,12 +521,20 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 					<!-- Flow Description Section -->
 					<div class="sidebar-section">
 						<h3>Flow Description</h3>
-						<v-textarea
-							:model-value="edits.description ?? item?.description ?? ''"
-							placeholder="Describe this flow..."
-							rows="3"
-							@update:model-value="updateField('description', $event)"
-						/>
+						<div class="description-preview">
+							<p v-if="edits.description || item?.description" class="description-text">
+								{{ (edits.description ?? item?.description ?? '').substring(0, 100) }}{{
+									(edits.description ?? item?.description ?? '').length > 100 ? '...' : ''
+								}}
+							</p>
+							<p v-else class="description-placeholder">
+								No description yet
+							</p>
+							<v-button secondary @click="showDescriptionModal = true">
+								<v-icon name="edit" />
+								{{ (edits.description || item?.description) ? 'Edit Description' : 'Add Description' }}
+							</v-button>
+						</div>
 					</div>
 
 					<!-- Node Details Section -->
@@ -612,6 +632,31 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 				</li>
 			</ul>
 		</div>
+
+		<!-- Description Modal -->
+		<v-dialog v-model="showDescriptionModal" :max-width="600">
+			<v-card>
+				<v-card-title>Flow Description</v-card-title>
+				<v-card-text>
+					<v-textarea
+						:model-value="edits.description ?? item?.description ?? ''"
+						placeholder="Describe this flow in detail..."
+						rows="8"
+						auto-grow
+						@update:model-value="updateField('description', $event)"
+					/>
+				</v-card-text>
+				<v-card-actions>
+					<v-spacer />
+					<v-button secondary @click="showDescriptionModal = false">
+						Cancel
+					</v-button>
+					<v-button @click="showDescriptionModal = false">
+						Save
+					</v-button>
+				</v-card-actions>
+			</v-card>
+		</v-dialog>
 	</div>
 	</div>
 </template>
@@ -661,8 +706,9 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 }
 
 .flow-name-input {
-	font-size: 1.5rem;
-	font-weight: 600;
+	font-size: 2rem;
+	font-weight: 700;
+	min-height: 60px;
 }
 
 .flow-subtitle {
@@ -800,6 +846,34 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 	margin: 0 0 1rem 0;
 	color: var(--theme--foreground);
 	font-size: 1rem;
+}
+
+.description-preview {
+	display: flex;
+	flex-direction: column;
+	gap: 0.75rem;
+}
+
+.description-text {
+	font-size: 0.875rem;
+	line-height: 1.4;
+	color: var(--theme--foreground);
+	margin: 0;
+	padding: 0.75rem;
+	background: var(--theme--background-subdued);
+	border-radius: var(--theme--border-radius);
+	border: 1px solid var(--theme--border-color-subdued);
+}
+
+.description-placeholder {
+	font-size: 0.875rem;
+	color: var(--theme--foreground-subdued);
+	font-style: italic;
+	margin: 0;
+	padding: 0.75rem;
+	background: var(--theme--background-subdued);
+	border-radius: var(--theme--border-radius);
+	border: 1px dashed var(--theme--border-color-subdued);
 }
 
 .property-group {
