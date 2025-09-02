@@ -147,7 +147,12 @@ watch(() => props.item, (newItem) => {
 				: newItem.flow_data;
 
 			flowNodes.value = flowData.nodes || [];
-			flowEdges.value = flowData.edges || [];
+			// Convert existing edges to step type and make them animated
+			flowEdges.value = (flowData.edges || []).map((edge: Edge) => ({
+				...edge,
+				type: 'step',
+				animated: true,
+			}));
 
 			// Fit view after loading data
 			if (flowData.nodes && flowData.nodes.length > 0) {
@@ -306,6 +311,8 @@ function deleteSelectedNode() {
 function onConnect(connection: Connection) {
 	flowEdges.value.push({
 		id: `edge-${Date.now()}`,
+		type: 'step',
+		animated: true,
 		...connection,
 	});
 }
