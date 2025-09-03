@@ -13,6 +13,13 @@ import ProcessNode from '../flow-nodes/ProcessNode.vue';
 import DecisionNode from '../flow-nodes/DecisionNode.vue';
 import OffPageNode from '../flow-nodes/OffPageNode.vue';
 
+// Import custom header components
+import CustomHeaderBasic from '../custom-headers/custom-header-basic.vue';
+import CustomHeaderMinimal from '../custom-headers/custom-header-minimal.vue';
+import CustomHeaderAdvanced from '../custom-headers/custom-header-advanced.vue';
+import CustomHeaderProcessMap from '../custom-headers/custom-header-process-map.vue';
+import CustomHeaderVisualFlow from '../custom-headers/custom-header-visual-flow.vue';
+
 interface Props {
 	collection: string;
 	primaryKey?: string | null;
@@ -33,6 +40,9 @@ const emit = defineEmits<{
 	'update:edits': [value: Record<string, any>];
 	save: [];
 	refresh: [];
+	delete: [];
+	archive: [];
+	'save-as-copy': [];
 }>();
 
 // API and navigation setup
@@ -169,10 +179,52 @@ const nodeTypes = [
 	{ type: 'offpage', label: 'Off-page Connector', icon: 'home' }, // Off-page connector (house shape)
 ];
 
-const hasChanges = computed(() => Object.keys(props.edits).length > 0);
+// Custom header logic
+const shouldUseCustomHeader = computed(() => {
+	const customHeader = (props.collectionInfo?.meta as any)?.custom_header_component;
+	return !!customHeader && customHeader !== null;
+});
+
+const customHeaderName = computed(() => {
+	return (props.collectionInfo?.meta as any)?.custom_header_component || 'custom-header-basic';
+});
+
+const customHeaders = {
+	'custom-header-basic': CustomHeaderBasic,
+	'custom-header-minimal': CustomHeaderMinimal,
+	'custom-header-advanced': CustomHeaderAdvanced,
+	'custom-header-process-map': CustomHeaderProcessMap,
+	'custom-header-visual-flow': CustomHeaderVisualFlow,
+};
+
+const customHeaderComponent = computed(() => {
+	const componentName = customHeaderName.value;
+	return customHeaders[componentName as keyof typeof customHeaders] || CustomHeaderBasic;
+});
+
+const title = computed(() => {
+	return props.isNew 
+		? `Creating ${props.collectionInfo?.name || props.collection}` 
+		: `Editing ${props.collectionInfo?.name || props.collection}`;
+});
+
+const hasChanges = computed(() => {
+	// Check if there are any edits in the props.edits object
+	const hasEdits = Object.keys(props.edits).length > 0;
+	console.log('HasChanges computed:', hasEdits, 'Edits:', props.edits, 'Saving:', props.saving);
+	return hasEdits;
+});
 
 // Fetch workflows and collections on component mount
 onMounted(() => {
+	// Hide the default Directus header when using custom headers
+	if (shouldUseCustomHeader.value) {
+		const headerBar = document.querySelector('.header-bar');
+		if (headerBar) {
+			(headerBar as HTMLElement).style.display = 'none';
+		}
+	}
+	
 	fetchWorkflows();
 	fetchCollections();
 });
@@ -235,6 +287,11 @@ function updateField(fieldKey: string, value: any) {
 
 function saveFlow() {
 	emit('save');
+}
+
+// Handle custom header events
+function handleUpdateFlowName(name: string) {
+	updateField('name', name);
 }
 
 // Node palette drag and drop
@@ -400,8 +457,30 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 </script>
 
 <template>
-	<div class="visual-flow-builder-wrapper">
-		<div class="visual-flow-builder-editor">
+	<div class="visual-flow-builder-wrapper" :class="{ 'custom-header-active': shouldUseCustomHeader }">
+		<!-- Custom Header Integration -->
+		<component
+			v-if="shouldUseCustomHeader"
+			:is="customHeaderComponent"
+			:collection="collection || ''"
+			:primary-key="primaryKey?.toString() || null"
+			:title="title"
+			:has-edits="hasChanges"
+			:saving="saving || false"
+			:is-new="isNew || false"
+			:collection-info="collectionInfo"
+			:item="item"
+			:validation-errors="validationErrors || []"
+			:flow-name="edits.name ?? item?.name ?? ''"
+			@save="emit('save')"
+			@delete="emit('delete')"
+			@archive="emit('archive')"
+			@refresh="emit('refresh')"
+			@save-as-copy="emit('save-as-copy')"
+			@update-flow-name="handleUpdateFlowName"
+		/>
+
+		<div class="visual-flow-builder-editor" :class="{ 'hide-default-header': shouldUseCustomHeader }">
 		<!-- Header -->
 		<div class="editor-header">
 			<div class="title-section">
@@ -1026,5 +1105,26 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 .canvas-container :deep(.vue-flow__edge.selected) {
 	stroke: var(--theme--primary);
 	stroke-width: 2px;
+}
+
+/* Custom header integration */
+.visual-flow-builder-wrapper.custom-header-active .hide-default-header .editor-header {
+	display: none;
+}
+
+.visual-flow-builder-wrapper.custom-header-active {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+}
+
+.visual-flow-builder-wrapper.custom-header-active .visual-flow-builder-editor {
+	flex: 1;
+	height: auto;
+}
+
+/* Hide the default Directus header when using custom header */
+:deep(.header-bar) {
+	display: none !important;
 }
 </style>

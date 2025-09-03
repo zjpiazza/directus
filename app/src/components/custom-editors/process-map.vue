@@ -116,6 +116,7 @@ import CustomHeaderBasic from '../custom-headers/custom-header-basic.vue';
 import CustomHeaderMinimal from '../custom-headers/custom-header-minimal.vue';
 import CustomHeaderAdvanced from '../custom-headers/custom-header-advanced.vue';
 import CustomHeaderProcessMap from '../custom-headers/custom-header-process-map.vue';
+import CustomHeaderVisualFlow from '../custom-headers/custom-header-visual-flow.vue';
 
 import PhaseNode from '../flow-nodes/PhaseNode.vue';
 import DecisionNode from '../flow-nodes/DecisionNode.vue';
@@ -178,6 +179,7 @@ const customHeaders = {
 	'custom-header-minimal': CustomHeaderMinimal,
 	'custom-header-advanced': CustomHeaderAdvanced,
 	'custom-header-process-map': CustomHeaderProcessMap,
+	'custom-header-visual-flow': CustomHeaderVisualFlow,
 };
 
 const customHeaderComponent = computed(() => {

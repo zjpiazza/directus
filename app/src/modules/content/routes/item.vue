@@ -36,6 +36,7 @@ import CustomHeaderBasic from '../../../components/custom-headers/custom-header-
 import CustomHeaderMinimal from '../../../components/custom-headers/custom-header-minimal.vue';
 import CustomHeaderAdvanced from '../../../components/custom-headers/custom-header-advanced.vue';
 import CustomHeaderProcessMap from '../../../components/custom-headers/custom-header-process-map.vue';
+import CustomHeaderVisualFlow from '../../../components/custom-headers/custom-header-visual-flow.vue';
 
 interface Props {
 	collection: string;
