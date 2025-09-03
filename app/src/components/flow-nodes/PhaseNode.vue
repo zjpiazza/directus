@@ -52,15 +52,18 @@ defineProps<Props>();
 	background: linear-gradient(135deg, #e5e7eb 0%, #d1d5db 100%);
 	border: 2px solid #9ca3af;
 	border-radius: 8px;
-	padding: 16px 20px;
-	min-width: 140px;
-	min-height: 80px;
+	padding: calc(0.96vw + 0.32rem) calc(1.2vw + 0.48rem);
+	min-width: calc(8vw + 1.6rem);
+	min-height: calc(4.8vh + 0.8rem);
+	width: calc(9.6vw + 3.2rem);
+	height: calc(5.6vh + 1.6rem);
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 	transition: all 0.2s ease;
 	cursor: pointer;
+	font-size: calc(0.8vw + 0.6rem);
 }
 
 .phase-node:hover {
@@ -74,15 +77,19 @@ defineProps<Props>();
 
 .node-label {
 	font-weight: 600;
-	font-size: 14px;
+	font-size: calc(0.512vw + 0.384rem);
 	color: #374151;
 	line-height: 1.3;
 	white-space: pre-line;
 }
 
 .phase-handle {
-	width: 8px;
-	height: 8px;
+	width: calc(0.48vw + 3.2px);
+	height: calc(0.48vw + 3.2px);
+	min-width: 4.8px;
+	min-height: 4.8px;
+	max-width: 9.6px;
+	max-height: 9.6px;
 	background: #6b7280;
 	border: 2px solid white;
 }

@@ -2,7 +2,6 @@
 	<div class="decision-node" :class="{ selected: selected }">
 		<div class="diamond-shape">
 			<div class="node-content">
-				<v-icon name="change_history" class="node-icon" />
 				<span class="node-title">{{ data.label || 'Decision' }}</span>
 				<div v-if="data.description" class="node-description">
 					{{ data.description }}
@@ -15,25 +14,25 @@
 			id="top"
 			type="source"
 			:position="Position.Top"
-			:style="{ background: '#ef4444' }"
+			:style="{ background: '#fbbf24' }"
 		/>
 		<Handle
 			id="right"
 			type="source"
 			:position="Position.Right"
-			:style="{ background: '#ef4444' }"
+			:style="{ background: '#fbbf24' }"
 		/>
 		<Handle
 			id="bottom"
 			type="source"
 			:position="Position.Bottom"
-			:style="{ background: '#ef4444' }"
+			:style="{ background: '#fbbf24' }"
 		/>
 		<Handle
 			id="left"
 			type="source"
 			:position="Position.Left"
-			:style="{ background: '#ef4444' }"
+			:style="{ background: '#fbbf24' }"
 		/>
 	</div>
 </template>
@@ -56,18 +55,22 @@ defineProps<Props>();
 <style scoped>
 .decision-node {
 	position: relative;
-	width: 120px;
-	height: 120px;
+	width: calc(6.4vw + 1.6rem);
+	height: calc(6.4vw + 1.6rem);
+	min-width: 48px;
+	min-height: 48px;
+	max-width: 96px;
+	max-height: 96px;
 }
 
 .diamond-shape {
 	width: 100%;
 	height: 100%;
-	background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-	border: 2px solid #b91c1c;
+	background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+	border: 2px solid #d97706;
 	transform: rotate(45deg);
 	border-radius: 8px;
-	box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+	box-shadow: 0 4px 12px rgba(251, 191, 36, 0.2);
 	transition: all 0.2s ease;
 	display: flex;
 	align-items: center;
@@ -77,38 +80,33 @@ defineProps<Props>();
 
 .diamond-shape:hover {
 	transform: rotate(45deg) scale(1.05);
-	box-shadow: 0 8px 25px rgba(239, 68, 68, 0.3);
+	box-shadow: 0 8px 25px rgba(251, 191, 36, 0.3);
 }
 
 .decision-node.selected .diamond-shape {
 	border-color: #ffffff;
-	box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.4);
+	box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.4);
 	transform: rotate(45deg) scale(1.05);
 }
 
 .node-content {
 	transform: rotate(-45deg);
 	text-align: center;
-	color: white;
-	padding: 8px;
-	max-width: 80px;
-}
-
-.node-icon {
-	font-size: 16px;
-	display: block;
-	margin-bottom: 4px;
+	color: black;
+	padding: calc(0.4vw + 0.16rem);
+	max-width: calc(4.8vw + 0.8rem);
+	font-size: calc(0.512vw + 0.384rem);
 }
 
 .node-title {
 	font-weight: 600;
-	font-size: 12px;
+	font-size: calc(0.512vw + 0.384rem);
 	display: block;
 	line-height: 1.2;
 }
 
 .node-description {
-	font-size: 10px;
+	font-size: calc(0.4vw + 0.24rem);
 	opacity: 0.9;
 	margin-top: 2px;
 	line-height: 1.2;

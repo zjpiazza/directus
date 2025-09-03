@@ -37,8 +37,9 @@
 				:max-zoom="4"
 				:fit-view-on-init="true"
 				:default-edge-options="{ type: 'step', animated: true }"
-				class="vue-flow-canvas"
+				:class="['vue-flow-canvas', `zoom-level-${Math.round(currentZoom * 10)}`]"
 				@nodes-initialized="onNodesInitialized"
+				@move="onViewportMove"
 			>
 				<!-- Custom Node Templates -->
 				<template #node-phase="nodeProps">
@@ -68,7 +69,7 @@
 							v-for="workflow in phase.workflows"
 							:key="workflow.id"
 							class="workflow-item"
-							@click="openWorkflow(workflow.id)"
+							@click="openWorkflow(workflow.workflowId || workflow.id)"
 						>
 							<v-icon name="description" size="small" />
 							{{ workflow.title }}
@@ -81,8 +82,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import { VueFlow, PanOnScrollMode } from '@vue-flow/core';
+import { ref, onMounted, watch, computed } from 'vue';
+import { VueFlow, PanOnScrollMode, useVueFlow } from '@vue-flow/core';
 import { Background } from '@vue-flow/background';
 import { Controls } from '@vue-flow/controls';
 import type { Node, Edge } from '@vue-flow/core';
@@ -97,6 +98,20 @@ interface Props {
 	primaryKey?: string | number;
 }
 
+interface WorkflowItem {
+	id: string;
+	title: string;
+	workflowId?: string;
+	workflowName?: string;
+}
+
+interface Phase {
+	id: string;
+	title: string;
+	color: string;
+	workflows: WorkflowItem[];
+}
+
 const props = defineProps<Props>();
 
 // API composable for fetching programs
@@ -105,6 +120,33 @@ const api = useApi();
 // Programs data
 const programs = ref<Array<{ id: string; name: string }>>([]);
 const selectedProgram = ref<string | null>(null);
+
+// Workflow links data
+const workflowLinks = ref<Array<any>>([]);
+
+// Vue Flow viewport reactivity
+const { getViewport, onInit } = useVueFlow();
+const currentZoom = ref(1);
+const viewportScale = computed(() => {
+	// Create a responsive scale factor based on viewport zoom and screen size
+	const baseScale = Math.min(window.innerWidth / 1200, window.innerHeight / 800);
+	return Math.max(0.5, Math.min(2, baseScale * currentZoom.value));
+});
+
+// Watch for zoom changes and update node scaling
+watch(() => getViewport(), (viewport) => {
+	if (viewport) {
+		currentZoom.value = viewport.zoom;
+	}
+}, { deep: true });
+
+onInit(() => {
+	// Initialize zoom tracking
+	const viewport = getViewport();
+	if (viewport) {
+		currentZoom.value = viewport.zoom;
+	}
+});
 
 // Function to fetch programs from the collection
 async function fetchPrograms() {
@@ -116,120 +158,174 @@ async function fetchPrograms() {
 			},
 		});
 		programs.value = response.data.data || [];
+		
+		// Set default program if available
+		if (programs.value.length > 0 && !selectedProgram.value && programs.value[0]) {
+			selectedProgram.value = String(programs.value[0].id);
+			await fetchWorkflowLinks();
+		}
 	} catch (error) {
 		console.error('Error fetching programs:', error);
 		programs.value = [];
 	}
 }
 
+// Function to fetch workflow links for the selected program
+async function fetchWorkflowLinks() {
+	if (!selectedProgram.value) return;
+	
+	try {
+		const response = await api.get('/items/workflow_links', {
+			params: {
+				fields: ['id', 'program', 'phase', 'label', 'order', 'workflow.id', 'workflow.name'],
+				filter: {
+					program: { _eq: selectedProgram.value }
+				},
+				sort: ['order'],
+				limit: -1,
+			},
+		});
+		workflowLinks.value = response.data.data || [];
+		updatePhasesWithWorkflowLinks();
+	} catch (error) {
+		console.error('Error fetching workflow links:', error);
+		workflowLinks.value = [];
+	}
+}
+
+// Function to update phases with workflow links from database
+function updatePhasesWithWorkflowLinks() {
+	// Group workflow links by phase
+	const linksByPhase = workflowLinks.value.reduce((acc, link) => {
+		if (!acc[link.phase]) {
+			acc[link.phase] = [];
+		}
+		acc[link.phase].push({
+			id: link.workflow?.id || link.id,
+			title: link.label,
+			workflowId: link.workflow?.id,
+			workflowName: link.workflow?.name
+		});
+		return acc;
+	}, {} as Record<string, WorkflowItem[]>);
+
+	// Update phases with actual workflow links
+	phases.value = [
+		{
+			id: 'request_service',
+			title: 'REQUEST SERVICE/REPORT',
+			color: '#7c3aed',
+			workflows: linksByPhase.request_service || []
+		},
+		{
+			id: 'evaluate_service',
+			title: 'EVALUATE SERVICE',
+			color: '#7c3aed',
+			workflows: linksByPhase.evaluate_service || []
+		},
+		{
+			id: 'provide_services',
+			title: 'PROVIDE SERVICES AND REEVALUATE SERVICES',
+			color: '#7c3aed',
+			workflows: linksByPhase.provide_services || []
+		},
+		{
+			id: 'end_of_service',
+			title: 'END OF SERVICES',
+			color: '#7c3aed',
+			workflows: linksByPhase.end_of_service || []
+		}
+	];
+}
+
 // Handle program selection change
-function onProgramChange(programId: string) {
+async function onProgramChange(programId: string) {
 	selectedProgram.value = programId;
-	// Here you could filter workflows or update the diagram based on the selected program
+	await fetchWorkflowLinks();
 	console.log('Selected program:', programId);
 }
 
-// Framework phases data
-const phases = ref([
+// Framework phases data - will be updated dynamically from workflow_links
+const phases = ref<Phase[]>([
 	{
-		id: 'request',
+		id: 'request_service',
 		title: 'REQUEST SERVICE/REPORT',
 		color: '#7c3aed',
-		workflows: [
-			{ id: 'report-abuse', title: 'REPORT OF ABUSE OR NEGLECT' },
-			{ id: 'request-services', title: 'REQUEST FOR SERVICES' },
-			{ id: 'referral', title: 'REFERRAL' },
-			{ id: 'icwa-inquiry', title: 'ICWA INQUIRY' }
-		]
+		workflows: []
 	},
 	{
-		id: 'evaluate',
+		id: 'evaluate_service',
 		title: 'EVALUATE SERVICE',
 		color: '#7c3aed',
-		workflows: [
-			{ id: 'cps-investigation', title: 'CPS INVESTIGATION' },
-			{ id: 'child-removal', title: 'CHILD REMOVAL' },
-			{ id: 'court-process', title: 'COURT PROCESS FOR CHILD REMOVAL' },
-			{ id: 'screen-evaluate', title: 'SCREEN-EVALUATE REQUEST' },
-			{ id: 'icwa-determination', title: 'ICWA DETERMINATION' }
-		]
+		workflows: []
 	},
 	{
-		id: 'provide',
+		id: 'provide_services',
 		title: 'PROVIDE SERVICES AND REEVALUATE SERVICES',
 		color: '#7c3aed',
-		workflows: [
-			{ id: 'non-licensed', title: 'NON-LICENSED PLACEMENT' },
-			{ id: 'supervision', title: 'SUPERVISION' },
-			{ id: 'program-management', title: 'PROGRAM MANAGEMENT' },
-			{ id: 'case-management', title: 'CASE MANAGEMENT' },
-			{ id: 'provide-reevaluate', title: 'PROVIDE AND RE-EVALUATE SERVICES' },
-			{ id: 'placement', title: 'PLACEMENT' },
-			{ id: 'critical-incident', title: 'CRITICAL INCIDENT - SV1' },
-			{ id: 'home-visit', title: 'HOME VISIT' }
-		]
+		workflows: []
 	},
 	{
-		id: 'end',
+		id: 'end_of_service',
 		title: 'END OF SERVICES',
 		color: '#7c3aed',
-		workflows: [
-			{ id: 'end-service', title: 'END OF SERVICE' }
-		]
+		workflows: []
 	}
 ]);
 
 // Vue Flow nodes and edges
 const flowNodes = ref<Node[]>([
-	// Phase nodes - positioned to match the framework diagram
+	// Phase nodes - positioned with proper spacing: 1/5, 1/5, 2/5, 1/5
 	{
 		id: 'request-node',
 		type: 'phase',
-		position: { x: 80, y: 120 },
+		position: { x: 100, y: 80 },
 		data: { label: 'Request\nService/Report', phase: 'request' }
 	},
 	{
 		id: 'evaluate-node',
 		type: 'phase',
-		position: { x: 280, y: 120 },
+		position: { x: 300, y: 80 },
 		data: { label: 'Evaluate Service', phase: 'evaluate' }
 	},
 	{
 		id: 'provide-node',
 		type: 'phase',
-		position: { x: 480, y: 180 },
+		position: { x: 500, y: 80 },
 		data: { label: 'Provide Services', phase: 'provide' }
 	},
 	{
 		id: 'reevaluate-node',
 		type: 'phase',
-		position: { x: 680, y: 120 },
+		position: { x: 900, y: 80 },
 		data: { label: 'Reevaluate Services', phase: 'reevaluate' }
 	},
 	{
 		id: 'end-node',
 		type: 'phase',
-		position: { x: 880, y: 280 },
+		position: { x: 1100, y: 200 },
 		data: { label: 'End Of Services', phase: 'end' }
 	},
 	// Decision node
 	{
 		id: 'decision-node',
 		type: 'decision',
-		position: { x: 680, y: 320 },
-		data: { label: 'Appropriate To\nContinue?', yesLabel: 'Yes', noLabel: 'No' }
+		position: { x: 840, y: 200 },
+		data: { label: 'Appropriate\nTo\nContinue?', yesLabel: 'Yes', noLabel: 'No' }
 	}
 ]);
 
 const flowEdges = ref<Edge[]>([
-	// Main flow arrows
-	{ id: 'e1', source: 'request-node', target: 'evaluate-node', type: 'step', sourceHandle: 'right', targetHandle: 'left' },
-	{ id: 'e2', source: 'evaluate-node', target: 'provide-node', type: 'step', sourceHandle: 'right', targetHandle: 'left' },
-	{ id: 'e3', source: 'provide-node', target: 'reevaluate-node', type: 'step', sourceHandle: 'right', targetHandle: 'left' },
-	{ id: 'e4', source: 'reevaluate-node', target: 'decision-node', type: 'step', sourceHandle: 'bottom', targetHandle: 'top' },
-	{ id: 'e5', source: 'decision-node', target: 'end-node', type: 'step', sourceHandle: 'right', targetHandle: 'left', label: 'No' },
-	// Loop back to provide services
-	{ id: 'e6', source: 'decision-node', target: 'provide-node', type: 'step', sourceHandle: 'left', targetHandle: 'bottom', label: 'Yes' }
+	// Main flow arrows - horizontal flow across the top
+	{ id: 'e1', source: 'request-node', target: 'evaluate-node', type: 'step', sourceHandle: 'right', targetHandle: 'left', markerEnd: 'arrowclosed' },
+	{ id: 'e2', source: 'evaluate-node', target: 'provide-node', type: 'step', sourceHandle: 'right', targetHandle: 'left', markerEnd: 'arrowclosed' },
+	{ id: 'e3', source: 'provide-node', target: 'reevaluate-node', type: 'step', sourceHandle: 'right', targetHandle: 'left', markerEnd: 'arrowclosed' },
+	// From reevaluate down to decision
+	{ id: 'e4', source: 'reevaluate-node', target: 'decision-node', type: 'step', sourceHandle: 'bottom', targetHandle: 'right', markerEnd: 'arrowclosed' },
+	// From decision to end (No path)
+	{ id: 'e5', source: 'decision-node', target: 'end-node', type: 'step', sourceHandle: 'bottom', targetHandle: 'left', label: 'No', markerEnd: 'arrowclosed' },
+	// Loop back from decision to provide services (Yes path)
+	{ id: 'e6', source: 'decision-node', target: 'provide-node', type: 'step', sourceHandle: 'left', targetHandle: 'bottom', label: 'Yes', markerEnd: 'arrowclosed' }
 ]);
 
 // Methods
@@ -240,24 +336,30 @@ function onNodesInitialized() {
 	}, 100);
 }
 
+function onViewportMove(event: { flowTransform: { x: number; y: number; zoom: number } }) {
+	// Update current zoom when viewport moves
+	currentZoom.value = event.flowTransform.zoom;
+}
+
 function openWorkflow(workflowId: string) {
 	// Open the specific workflow in a new tab
-	if (props.collection) {
-		const workflowUrl = `/admin/content/${props.collection}/${workflowId}`;
-		window.open(workflowUrl, '_blank');
-	}
+	const workflowUrl = `/admin/content/visual_flows/${workflowId}`;
+	window.open(workflowUrl, '_blank');
 }
 
 // Initialize from props
-onMounted(() => {
+onMounted(async () => {
 	// Fetch programs on component mount
-	fetchPrograms();
+	await fetchPrograms();
 	
 	if (props.value) {
 		if (props.value.nodes) flowNodes.value = props.value.nodes;
 		if (props.value.edges) flowEdges.value = props.value.edges;
 		if (props.value.phases) phases.value = props.value.phases;
-		if (props.value.selectedProgram) selectedProgram.value = props.value.selectedProgram;
+		if (props.value.selectedProgram) {
+			selectedProgram.value = props.value.selectedProgram;
+			await fetchWorkflowLinks();
+		}
 	}
 });
 </script>
@@ -365,7 +467,7 @@ onMounted(() => {
 
 .swim-lanes-container {
 	display: grid;
-	grid-template-columns: repeat(4, 1fr);
+	grid-template-columns: 1fr 1fr 2fr 1fr;
 	height: 40vh;
 	background: white;
 	border-top: 1px solid #e5e7eb;
@@ -467,5 +569,18 @@ onMounted(() => {
 	to {
 		stroke-dashoffset: -10;
 	}
+}
+
+/* Responsive zoom classes for optimal viewing at different zoom levels */
+.vue-flow.zoom-small :deep(.vue-flow__node) {
+	transform-origin: center;
+}
+
+.vue-flow.zoom-medium :deep(.vue-flow__node) {
+	transform-origin: center;
+}
+
+.vue-flow.zoom-large :deep(.vue-flow__node) {
+	transform-origin: center;
 }
 </style>

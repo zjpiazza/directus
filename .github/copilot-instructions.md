@@ -14,6 +14,7 @@ This document outlines the rules and guidelines for the AI coding assistant to f
 *   **JavaScript/TypeScript:** ES6+
 *   **pnpm:** As the package manager.
 *   **Vite:** Build tool.
+*   **@directus/composables:** For data fetching.
 
 ## PROJECT STRUCTURE
 
@@ -59,6 +60,29 @@ This document outlines the rules and guidelines for the AI coding assistant to f
     *   Open linked content in a new tab using `window.open(targetUrl, '_blank')`.
     *   Use `/collections/{collection}/{id}` format for navigation URLs in Directus.
     *   For creating a new entry, the URL should end with `/{collection_name}/+`.
+*   Edge connections can be modified by ensuring `edges-updatable="true"` and `edges-reconnectable="true"` props are configured. Use `type="source"` for all handles to allow connections from any handle to any other handle.
+*   Selection outlines for Vue Flow nodes should match the shape of the node type. Use CSS `clip-path` with `polygon()` and pseudo-elements (`::after`) for creating exact geometric shapes for the selection outlines.
+*   Edge type should be step edge and animated. All edges should include `markerEnd: 'arrowclosed'` to clearly indicate the flow direction.
+*   For Process nodes, create two sub types: "form" and "task".
+    *   Task Nodes: Blue rectangles with square icon (default behavior).
+    *   Form Nodes: Green rectangles with document icon, includes collection linking.
+*   When working with Process Map component ensure the layout matches the CPS framework.
+    *   Allocate horizontal space as:
+        *   Request Service/Report: 1/5th
+        *   Evaluate Service: 1/5th
+        *   Provide Services: 2/5ths (double the space)
+        *   Reevaluate Services: 1/5th
+*   When working with Process Map component, the swim lanes in the bottom section need to reflect the same proportions as the node spacing: 1/5, 1/5, 2/5, 1/5.
+*   In the Process Map component, for the "Appropriate to Continue?" decision node:
+    *   Remove the icon inside the node.
+    *   Change the background color to a lighter yellow (`#fbbf24` to `#f59e0b`).
+    *   Change the font color to black.
+*   In the Process Map component, position the nodes exactly as laid out in the reference screenshot.
+*   In the Process Map component, the header should have the title centered using flexbox and the program dropdown right-aligned.
+*   In the Process Map component, the title should be centered using flexbox.
+*   In the Process Map component, the program dropdown should be right aligned and have a width of `300px`.
+*   In the Process Map component, all nodes should use the same font size.
+*   In the Process Map component, the nodes on the canvas should react to viewport changes.
 
 ## DEBUGGING
 
@@ -81,7 +105,3 @@ This document outlines the rules and guidelines for the AI coding assistant to f
 *   Ensure the background component fills the entire canvas area in Vue Flow.
 *   Use `height: 100%` to make components take up exactly the available vertical space within their parent container, avoiding scrolling within the content area.
 *   When implementing drag and drop functionality, use `user-select: none` to prevent text selection during drag operations.
-*   When using Vue Flow, use `type="source"` for all handles to allow connections from any handle to any other handle.
-*   Edge connections can be modified by ensuring `edges-updatable="true"` and `edges-reconnectable="true"` props are configured.
-*   Selection outlines for Vue Flow nodes should match the shape of the node type. Use CSS `clip-path` with `polygon()` and pseudo-elements (`::after`) for creating exact geometric shapes for the selection outlines.
-*   Edge type should be step edge and animated.
