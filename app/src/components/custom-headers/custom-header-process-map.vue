@@ -7,36 +7,20 @@ interface Props {
 	collection: string;
 	primaryKey?: string | null;
 	title: string;
-	hasEdits: boolean;
-	saving: boolean;
 	isNew: boolean;
 	collectionInfo?: any;
 	item?: any;
-	validationErrors?: any[];
-	hasErrors?: boolean;
-	archivable?: boolean;
-	deletable?: boolean;
 	selectedProgram?: string | null;
 	programs?: Array<{ id: string; name: string }>;
 }
 
 const props = withDefaults(defineProps<Props>(), {
 	primaryKey: null,
-	hasErrors: false,
-	archivable: false,
-	deletable: false,
 	selectedProgram: null,
 	programs: () => [],
 });
 
 const emit = defineEmits<{
-	save: [];
-	delete: [];
-	archive: [];
-	refresh: [];
-	'save-as-copy': [];
-	duplicate: [];
-	'toggle-info': [];
 	'program-change': [programId: string];
 }>();
 
@@ -47,14 +31,11 @@ const api = useApi();
 const programs = ref<Array<{ id: string; name: string }>>(props.programs || []);
 const selectedProgram = ref<string | null>(props.selectedProgram);
 
-const saveButtonText = computed(() => {
-	return props.isNew ? t('create') : t('save');
-});
-
+// Breadcrumbs
 const breadcrumbs = computed(() => {
 	const crumbs: Array<{ name: string; to?: string }> = [
 		{
-			name: t('content'),
+			name: 'Content',
 			to: '/content',
 		},
 		{
@@ -63,24 +44,13 @@ const breadcrumbs = computed(() => {
 		},
 	];
 
-	if (!props.isNew && props.primaryKey) {
-		crumbs.push({
-			name: props.title || props.primaryKey,
-		});
-	} else if (props.isNew) {
+	if (props.isNew) {
 		crumbs.push({
 			name: t('creating_new_item'),
 		});
 	}
 
 	return crumbs;
-});
-
-const statusIndicator = computed(() => {
-	if (props.hasErrors) return { type: 'error', text: t('validation_errors') };
-	if (props.hasEdits) return { type: 'warning', text: t('unsaved_changes') };
-	if (props.saving) return { type: 'info', text: t('saving') };
-	return { type: 'success', text: t('saved') };
 });
 
 // Fetch programs from the API
@@ -140,89 +110,6 @@ onMounted(() => {
 					/>
 				</template>
 			</nav>
-
-			<div class="header-actions">
-				<v-button 
-					icon 
-					rounded 
-					secondary 
-					@click="$emit('refresh')"
-					v-tooltip="t('refresh')"
-				>
-					<v-icon name="refresh" />
-				</v-button>
-
-				<v-menu placement="bottom-end">
-					<template #activator="{ toggle }">
-						<v-button 
-							icon 
-							rounded 
-							secondary 
-							@click="toggle"
-							v-tooltip="t('more_options')"
-						>
-							<v-icon name="more_vert" />
-						</v-button>
-					</template>
-
-					<v-list>
-						<v-list-item 
-							v-if="!isNew"
-							clickable 
-							@click="$emit('save-as-copy')"
-						>
-							<v-list-item-icon>
-								<v-icon name="content_copy" />
-							</v-list-item-icon>
-							<v-list-item-content>
-								{{ t('save_as_copy') }}
-							</v-list-item-content>
-						</v-list-item>
-
-						<v-list-item 
-							v-if="!isNew"
-							clickable 
-							@click="$emit('duplicate')"
-						>
-							<v-list-item-icon>
-								<v-icon name="control_point_duplicate" />
-							</v-list-item-icon>
-							<v-list-item-content>
-								{{ t('duplicate') }}
-							</v-list-item-content>
-						</v-list-item>
-
-						<v-divider v-if="!isNew && (archivable || deletable)" />
-
-						<v-list-item 
-							v-if="!isNew && archivable"
-							clickable 
-							@click="$emit('archive')"
-						>
-							<v-list-item-icon>
-								<v-icon name="archive" />
-							</v-list-item-icon>
-							<v-list-item-content>
-								{{ t('archive') }}
-							</v-list-item-content>
-						</v-list-item>
-
-						<v-list-item 
-							v-if="!isNew && deletable"
-							clickable 
-							class="danger"
-							@click="$emit('delete')"
-						>
-							<v-list-item-icon>
-								<v-icon name="delete" />
-							</v-list-item-icon>
-							<v-list-item-content>
-								{{ t('delete') }}
-							</v-list-item-content>
-						</v-list-item>
-					</v-list>
-				</v-menu>
-			</div>
 		</div>
 
 		<div class="header-main">
@@ -242,32 +129,6 @@ onMounted(() => {
 						<v-icon name="info" />
 					</div>
 					<h1 class="header-title">Framework (Standard CPS Framework)</h1>
-					<div class="status-indicators">
-						<v-chip 
-							:class="`status-${statusIndicator.type}`"
-							small
-							class="status-chip"
-						>
-							<v-icon 
-								:name="
-									statusIndicator.type === 'error' ? 'error' :
-									statusIndicator.type === 'warning' ? 'warning' :
-									statusIndicator.type === 'info' ? 'info' : 'check_circle'
-								" 
-								small 
-							/>
-							{{ statusIndicator.text }}
-						</v-chip>
-						
-						<v-chip 
-							v-if="validationErrors && validationErrors.length > 0"
-							class="status-error"
-							small
-						>
-							<v-icon name="error" small />
-							{{ t('validation_errors_count', { count: validationErrors.length }) }}
-						</v-chip>
-					</div>
 				</div>
 			</div>
 
@@ -284,28 +145,6 @@ onMounted(() => {
 					/>
 				</div>
 			</div>
-
-			<div class="header-right">
-				<v-button
-					secondary
-					:disabled="!hasEdits"
-					@click="$emit('toggle-info')"
-					class="info-button"
-				>
-					<v-icon name="info" />
-					{{ t('info') }}
-				</v-button>
-
-				<v-button
-					:loading="saving"
-					:disabled="!hasEdits"
-					@click="$emit('save')"
-					class="save-button"
-				>
-					<v-icon name="check" />
-					{{ saveButtonText }}
-				</v-button>
-			</div>
 		</div>
 	</div>
 </template>
@@ -318,191 +157,107 @@ onMounted(() => {
 
 .header-top {
 	display: flex;
-	align-items: center;
 	justify-content: space-between;
-	padding: 0.5rem 2rem;
-	background: var(--theme--background-subdued);
+	align-items: center;
+	padding: 12px 24px;
 	border-bottom: 1px solid var(--theme--border-color-subdued);
 }
 
 .breadcrumbs {
 	display: flex;
 	align-items: center;
-	gap: 0.25rem;
-	font-size: 0.875rem;
+	gap: 8px;
 }
 
 .breadcrumb-link {
-	color: var(--theme--primary);
+	color: var(--theme--foreground-subdued);
 	text-decoration: none;
-	transition: color 0.2s;
+	font-size: 14px;
 }
 
 .breadcrumb-link:hover {
-	color: var(--theme--primary-accent);
+	color: var(--theme--foreground);
 }
 
 .breadcrumb-current {
-	color: var(--theme--foreground-subdued);
+	color: var(--theme--foreground);
+	font-size: 14px;
 	font-weight: 500;
 }
 
 .breadcrumb-separator {
 	color: var(--theme--foreground-subdued);
-	margin: 0 0.25rem;
-}
-
-.header-actions {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
 }
 
 .header-main {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
-	padding: 1rem 2rem;
-	min-height: 80px;
-	background: #7c3aed;
-	color: white;
+	padding: 16px 24px;
+	gap: 24px;
 }
 
 .header-left {
 	display: flex;
 	align-items: center;
-	gap: 1rem;
+	gap: 16px;
+	flex: 1;
+}
+
+.back-button {
+	--v-button-background-color: transparent;
+	--v-button-color: var(--theme--foreground-subdued);
+}
+
+.back-button:hover {
+	--v-button-background-color: var(--theme--background-accent);
+	--v-button-color: var(--theme--foreground);
 }
 
 .title-section {
 	display: flex;
 	align-items: center;
-	gap: 1rem;
+	gap: 12px;
 }
 
 .info-icon {
-	background: rgba(255, 255, 255, 0.2);
+	background: var(--theme--primary);
+	color: var(--theme--primary-foreground);
 	border-radius: 50%;
 	width: 32px;
 	height: 32px;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	cursor: pointer;
-	flex-shrink: 0;
 }
 
 .header-title {
-	margin: 0;
-	font-size: 1.5rem;
+	font-size: 20px;
 	font-weight: 600;
-	color: white;
+	color: var(--theme--foreground);
+	margin: 0;
 }
 
 .header-center {
-	flex: 1;
 	display: flex;
-	justify-content: center;
-	max-width: 400px;
+	align-items: center;
+	gap: 16px;
 }
 
 .program-selector {
 	display: flex;
 	align-items: center;
-	gap: 0.5rem;
-	font-size: 0.875rem;
-	width: 100%;
+	gap: 8px;
+	min-width: 200px;
 }
 
 .program-selector label {
+	font-size: 14px;
 	font-weight: 500;
+	color: var(--theme--foreground-subdued);
 	white-space: nowrap;
-	color: white;
 }
 
-.program-selector :deep(.v-select) {
-	min-width: 300px;
-	background: rgba(255, 255, 255, 0.1);
-	border-radius: 4px;
-}
-
-.program-selector :deep(.v-select .v-input) {
-	background: transparent;
-	border: 1px solid rgba(255, 255, 255, 0.3);
-	color: white;
-}
-
-.program-selector :deep(.v-select .v-input::placeholder) {
-	color: rgba(255, 255, 255, 0.7);
-}
-
-.status-indicators {
-	display: flex;
-	align-items: center;
-	gap: 0.5rem;
-}
-
-.status-chip {
-	display: flex;
-	align-items: center;
-	gap: 0.25rem;
-}
-
-.status-success {
-	background: var(--theme--success-25);
-	color: var(--theme--success);
-}
-
-.status-warning {
-	background: var(--theme--warning-25);
-	color: var(--theme--warning);
-}
-
-.status-error {
-	background: var(--theme--danger-25);
-	color: var(--theme--danger);
-}
-
-.status-info {
-	background: var(--theme--primary-25);
-	color: var(--theme--primary);
-}
-
-.header-right {
-	display: flex;
-	align-items: center;
-	gap: 1rem;
-}
-
-.back-button {
-	color: rgba(255, 255, 255, 0.8);
-}
-
-.back-button:hover {
-	color: white;
-}
-
-.info-button {
-	color: rgba(255, 255, 255, 0.8);
-	border-color: rgba(255, 255, 255, 0.3);
-}
-
-.info-button:hover {
-	color: white;
-	border-color: rgba(255, 255, 255, 0.5);
-}
-
-.save-button {
-	background: rgba(255, 255, 255, 0.2);
-	color: white;
-	border-color: rgba(255, 255, 255, 0.3);
-}
-
-.save-button:hover {
-	background: rgba(255, 255, 255, 0.3);
-}
-
-.danger {
-	color: var(--theme--danger);
+.program-selector .v-select {
+	min-width: 150px;
 }
 </style> 

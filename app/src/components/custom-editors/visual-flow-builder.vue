@@ -32,9 +32,21 @@ interface Props {
 	validationErrors: ValidationError[];
 	collectionInfo: any;
 	permissions: any;
+	mode?: 'edit' | 'view';
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+	mode: 'edit',
+});
+
+// Check if user can edit based on permissions
+const canEdit = computed(() => {
+	// Check for create permission on new items, update permission on existing items
+	if (props.isNew) {
+		return props.permissions?.create !== false;
+	}
+	return props.permissions?.update !== false;
+});
 
 const emit = defineEmits<{
 	'update:edits': [value: Record<string, any>];
@@ -43,11 +55,16 @@ const emit = defineEmits<{
 	delete: [];
 	archive: [];
 	'save-as-copy': [];
+	'update:mode': [mode: 'edit' | 'view'];
 }>();
 
 // API and navigation setup
 const api = useApi();
 const currentWorkflowId = computed(() => props.primaryKey || props.item?.id || 'new');
+
+// Mode-based behavior
+const isEditMode = computed(() => props.mode === 'edit');
+const isViewMode = computed(() => props.mode === 'view');
 const availableWorkflows = ref<Array<{ id: string; name: string }>>([]);
 
 // Provide API and current workflow ID to child components
@@ -61,6 +78,12 @@ const fetchWorkflows = async () => {
 	try {
 		if (!api) {
 			console.warn('API not available for fetching workflows');
+			return;
+		}
+
+		// Only fetch workflows if we're not creating a new item
+		if (currentWorkflowId.value === '+' || !currentWorkflowId.value) {
+			availableWorkflows.value = [];
 			return;
 		}
 
@@ -210,9 +233,7 @@ const title = computed(() => {
 
 const hasChanges = computed(() => {
 	// Check if there are any edits in the props.edits object
-	const hasEdits = Object.keys(props.edits).length > 0;
-	console.log('HasChanges computed:', hasEdits, 'Edits:', props.edits, 'Saving:', props.saving);
-	return hasEdits;
+	return Object.keys(props.edits).length > 0;
 });
 
 // Fetch workflows and collections on component mount
@@ -280,18 +301,27 @@ watch([flowNodes, flowEdges], () => {
 // }, { deep: true });
 
 function updateField(fieldKey: string, value: any) {
+	// Prevent field updates during save to avoid triggering hasEdits after save completes
+	if (props.saving) return;
+	
 	const newEdits = { ...props.edits };
 	newEdits[fieldKey] = value;
 	emit('update:edits', newEdits);
 }
 
 function saveFlow() {
+	// Clear local edits immediately to prevent navigation warning
+	emit('update:edits', {});
 	emit('save');
 }
 
 // Handle custom header events
 function handleUpdateFlowName(name: string) {
 	updateField('name', name);
+}
+
+function handleModeChange(newMode: 'edit' | 'view') {
+	emit('update:mode', newMode);
 }
 
 // Node palette drag and drop
@@ -472,12 +502,15 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 			:item="item"
 			:validation-errors="validationErrors || []"
 			:flow-name="edits.name ?? item?.name ?? ''"
+			:mode="mode"
+			:can-edit="canEdit"
 			@save="emit('save')"
 			@delete="emit('delete')"
 			@archive="emit('archive')"
 			@refresh="emit('refresh')"
 			@save-as-copy="emit('save-as-copy')"
 			@update-flow-name="handleUpdateFlowName"
+			@update-mode="handleModeChange"
 		/>
 
 		<div class="visual-flow-builder-editor" :class="{ 'hide-default-header': shouldUseCustomHeader }">
@@ -513,8 +546,8 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 		<!-- Visual Flow Builder -->
 		<div class="flow-builder-container">
 			<div class="builder-layout">
-				<!-- Left Sidebar - Node Palette -->
-				<div class="node-palette">
+				<!-- Left Sidebar - Node Palette (only in edit mode) -->
+				<div v-if="isEditMode" class="node-palette">
 					<h3>Node Types</h3>
 					<div class="node-types">
 						<div
@@ -536,19 +569,20 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 				<!-- Center - Vue Flow Canvas -->
 				<div 
 					class="canvas-container"
-					@drop="onDrop"
-					@dragover="onDragOver"
-					@dragleave="onDragLeave"
+					:class="{ 'full-width': isViewMode }"
+					@drop="isEditMode ? onDrop : undefined"
+					@dragover="isEditMode ? onDragOver : undefined"
+					@dragleave="isEditMode ? onDragLeave : undefined"
 				>
 					<VueFlow
 						v-model:nodes="flowNodes"
 						v-model:edges="flowEdges"
 						snap-to-grid
 						:snap-grid="[20, 20]"
-						:nodes-draggable="true"
-						:edges-updatable="true"
-						:edges-reconnectable="true"
-						:connection-mode="ConnectionMode.Loose"
+						:nodes-draggable="isEditMode"
+						:edges-updatable="isEditMode"
+						:edges-reconnectable="isEditMode"
+						:connection-mode="isEditMode ? ConnectionMode.Loose : ConnectionMode.Strict"
 						:elements-selectable="true"
 						:default-viewport="{ x: 0, y: 0, zoom: 1 }"
 						:min-zoom="0.1"
@@ -562,10 +596,10 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 						:zoom-on-double-click="false"
 						@node-click="onNodeClick"
 						@edge-click="onEdgeClick"
-						@connect="onConnect"
-						@edge-update="onEdgeUpdate"
-						@edge-update-start="(event) => console.log('Edge update start:', event)"
-						@edge-update-end="(event) => console.log('Edge update end:', event)"
+						@connect="isEditMode ? onConnect : () => {}"
+						@edge-update="isEditMode ? onEdgeUpdate : () => {}"
+						@edge-update-start="isEditMode ? (event: any) => console.log('Edge update start:', event) : () => {}"
+						@edge-update-end="isEditMode ? (event: any) => console.log('Edge update end:', event) : () => {}"
 					>
 						<!-- Custom Node Templates -->
 						<template #node-terminal="nodeProps">
@@ -609,7 +643,11 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 							<p v-else class="description-placeholder">
 								No description yet
 							</p>
-							<v-button secondary @click="showDescriptionModal = true">
+							<v-button 
+								v-if="isEditMode"
+								secondary 
+								@click="showDescriptionModal = true"
+							>
 								<v-icon name="edit" />
 								{{ (edits.description || item?.description) ? 'Edit Description' : 'Add Description' }}
 							</v-button>
@@ -622,11 +660,19 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 						<div v-if="selectedNode" class="node-properties">
 							<div class="property-group">
 								<label>Label</label>
-								<v-input v-model="selectedNode.data.label" @input="updateNodeData" />
+								<v-input 
+									v-model="selectedNode.data.label" 
+									:readonly="isViewMode"
+									@input="isEditMode ? updateNodeData : undefined" 
+								/>
 							</div>
 							<div class="property-group">
 								<label>Description</label>
-								<v-textarea v-model="selectedNode.data.description" @input="updateNodeData" />
+								<v-textarea 
+									v-model="selectedNode.data.description" 
+									:readonly="isViewMode"
+									@input="isEditMode ? updateNodeData : undefined" 
+								/>
 							</div>
 							<div class="property-group">
 								<label>Type</label>
@@ -642,7 +688,8 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 										{ text: 'Task', value: 'task' },
 										{ text: 'Form', value: 'form' }
 									]"
-									@update:model-value="updateProcessSubtype"
+									:disabled="isViewMode"
+									@update:model-value="isEditMode ? updateProcessSubtype : undefined"
 								/>
 							</div>
 
@@ -655,7 +702,8 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 									item-text="text"
 									item-value="value"
 									placeholder="Select collection for form..."
-									@update:model-value="updateFormCollection"
+									:disabled="isViewMode"
+									@update:model-value="isEditMode ? updateFormCollection : undefined"
 								/>
 							</div>
 
@@ -668,7 +716,8 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 									item-text="name"
 									item-value="id"
 									placeholder="Select workflow to link to..."
-									@update:model-value="updateOffPageTarget"
+									:disabled="isViewMode"
+									@update:model-value="isEditMode ? updateOffPageTarget : undefined"
 								/>
 								<v-button
 									v-if="selectedNode.data.targetWorkflowId"
@@ -682,8 +731,8 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 								</v-button>
 							</div>
 
-							<!-- Delete Node Button -->
-							<div class="property-group">
+							<!-- Delete Node Button (only in edit mode) -->
+							<div v-if="isEditMode" class="property-group">
 								<v-button
 									kind="danger"
 									block
@@ -726,7 +775,7 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 					/>
 				</v-card-text>
 				<v-card-actions>
-					<v-spacer />
+					<div style="flex: 1;"></div>
 					<v-button secondary @click="showDescriptionModal = false">
 						Cancel
 					</v-button>
@@ -811,6 +860,15 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 	grid-template-columns: 250px 1fr 300px;
 	height: 100%;
 	overflow: hidden;
+}
+
+/* View mode layout without node palette */
+.builder-layout:has(.canvas-container.full-width) {
+	grid-template-columns: 1fr 300px;
+}
+
+.canvas-container.full-width {
+	/* In view mode, canvas takes full width without node palette */
 }
 
 .node-palette {

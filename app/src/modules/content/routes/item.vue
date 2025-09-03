@@ -97,6 +97,13 @@ const {
 	validationErrors: itemValidationErrors,
 } = useItem(collection, primaryKey, query);
 
+// Mode state for custom components that support view/edit toggle
+const currentMode = ref<'edit' | 'view'>('edit');
+
+function updateMode(mode: 'edit' | 'view') {
+	currentMode.value = mode;
+}
+
 const validationErrors = computed(() => {
 	if (currentVersion.value === null) return itemValidationErrors.value;
 	return versionValidationErrors.value;
@@ -786,8 +793,10 @@ function useCollectionRoute() {
 			:validation-errors="validationErrors"
 			:collection-info="collectionInfo"
 			:permissions="permissions"
+			:mode="currentMode"
 			@update:edits="edits = $event"
-			@save="save"
+			@update:mode="updateMode"
+			@save="saveAndStay"
 			@delete="deleteAndQuit"
 			@archive="toggleArchive"
 			@refresh="refresh"

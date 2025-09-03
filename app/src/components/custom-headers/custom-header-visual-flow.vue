@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useApi } from '@directus/composables';
 
@@ -19,6 +19,8 @@ interface Props {
 	// Visual flow specific props
 	flowName?: string;
 	flowDescription?: string;
+	mode?: 'edit' | 'view';
+	canEdit?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -28,6 +30,8 @@ const props = withDefaults(defineProps<Props>(), {
 	deletable: false,
 	flowName: '',
 	flowDescription: '',
+	mode: 'edit',
+	canEdit: true,
 });
 
 const emit = defineEmits<{
@@ -40,10 +44,15 @@ const emit = defineEmits<{
 	'toggle-info': [];
 	'update-flow-name': [name: string];
 	'update-flow-description': [description: string];
+	'update-mode': [mode: 'edit' | 'view'];
 }>();
 
 const { t } = useI18n();
 const api = useApi();
+
+// Mode-based behavior
+const isEditMode = computed(() => props.mode === 'edit');
+const isViewMode = computed(() => props.mode === 'view');
 
 // Available workflows for navigation
 const availableWorkflows = ref<Array<{ id: string; name: string }>>([]);
@@ -71,7 +80,7 @@ const breadcrumbs = computed(() => {
 		});
 	} else if (props.isNew) {
 		crumbs.push({
-			name: t('New'),
+			name: t('creating_new_item'),
 		});
 	}
 
@@ -79,15 +88,34 @@ const breadcrumbs = computed(() => {
 });
 
 const statusIndicator = computed(() => {
-	if (props.hasErrors) return { type: 'error', text: t('validation_errors') };
-	if (props.saving) return { type: 'info', text: t('saving') };
-	if (props.hasEdits) return { type: 'warning', text: t('unsaved_changes') };
-	return { type: 'success', text: t('saved') };
+	// Check validation errors first
+	if (props.validationErrors && props.validationErrors.length > 0) {
+		return { type: 'error', text: t('validation_errors') };
+	}
+	
+	// Check if currently saving
+	if (props.saving) {
+		return { type: 'info', text: 'Saving...' };
+	}
+	
+	// Check for unsaved changes
+	if (props.hasEdits) {
+		return { type: 'warning', text: t('unsaved_changes') };
+	}
+	
+	// Default to saved state
+	return { type: 'success', text: props.isNew ? 'Ready' : t('saved') };
 });
 
 // Fetch available workflows for navigation
 async function fetchWorkflows() {
 	try {
+		// Only fetch workflows if we're not creating a new item
+		if (props.primaryKey === '+') {
+			availableWorkflows.value = [];
+			return;
+		}
+
 		const response = await api.get(`/items/${props.collection}`, {
 			params: {
 				fields: ['id', 'name'],
@@ -112,10 +140,41 @@ function navigateToWorkflow(workflowId: string) {
 	window.open(targetUrl, '_blank');
 }
 
+// Local state for flow name to prevent reactive loops
+const localFlowName = ref(props.flowName || '');
+
+// Watch prop changes to update local state
+watch(() => props.flowName, (newName) => {
+	localFlowName.value = newName || '';
+});
+
 // Update flow name
 function updateFlowName(name: string) {
-	emit('update-flow-name', name);
+	localFlowName.value = name;
+	// Only emit if the value actually changed to prevent unnecessary updates
+	if (name !== props.flowName) {
+		emit('update-flow-name', name);
+	}
 }
+
+// Toggle between view and edit modes
+function toggleMode() {
+	if (!props.canEdit) return; // Disabled if user doesn't have edit permissions
+	
+	const newMode = props.mode === 'edit' ? 'view' : 'edit';
+	emit('update-mode', newMode);
+}
+
+// Watch for changes in key props to detect navigation needs
+watch([() => props.saving, () => props.isNew], 
+	([saving, isNew], [prevSaving, prevIsNew]) => {
+		// If we just finished saving a new item, we should navigate to the new URL
+		if (prevSaving && !saving && prevIsNew && isNew) {
+			// The parent component should handle navigation, but we can emit an event if needed
+			// For now, let's see if the parent handles it automatically
+		}
+	}
+);
 
 onMounted(() => {
 	fetchWorkflows();
@@ -150,7 +209,7 @@ onMounted(() => {
 					rounded 
 					secondary 
 					@click="$emit('refresh')"
-					v-tooltip="t('refresh')"
+					v-tooltip="t('refresh_page')"
 				>
 					<v-icon name="refresh" />
 				</v-button>
@@ -202,7 +261,7 @@ onMounted(() => {
 							rounded 
 							secondary 
 							@click="toggle"
-							v-tooltip="t('more_options')"
+							v-tooltip="t('options')"
 						>
 							<v-icon name="more_vert" />
 						</v-button>
@@ -287,14 +346,15 @@ onMounted(() => {
 				<div class="title-section">
 					<div class="flow-title-input">
 						<v-input
-							:model-value="flowName"
+							:model-value="localFlowName"
 							placeholder="Enter flow name..."
 							class="flow-name-input"
-							@update:model-value="updateFlowName"
+							:readonly="isViewMode"
+							@update:model-value="isEditMode ? updateFlowName : undefined"
 						/>
 					</div>
 					
-					<div class="status-indicators">
+					<!-- <div class="status-indicators">
 						<v-chip 
 							:class="`status-${statusIndicator.type}`"
 							small
@@ -319,22 +379,30 @@ onMounted(() => {
 							<v-icon name="error" small />
 							{{ t('validation_errors_count', { count: validationErrors.length }) }}
 						</v-chip>
-					</div>
+					</div> -->
 				</div>
 			</div>
 
 			<div class="header-right">
-				<v-button
-					secondary
-					:disabled="!hasEdits"
-					@click="$emit('toggle-info')"
-					class="info-button"
-				>
-					<v-icon name="info" />
-					{{ t('info') }}
-				</v-button>
+				<!-- Mode Toggle Switch -->
+				<div class="mode-toggle-section">
+					<span class="mode-label">{{ isEditMode ? 'Edit' : 'View' }}</span>
+					<v-button
+						:kind="isEditMode ? 'primary' : 'secondary'"
+						:disabled="!canEdit"
+						@click="toggleMode"
+						class="mode-toggle"
+						small
+					>
+						<v-icon :name="isEditMode ? 'edit' : 'visibility'" />
+						{{ isEditMode ? 'View' : 'Edit' }}
+					</v-button>
+				</div>
+
+
 
 				<v-button
+					v-if="isEditMode"
 					:loading="saving"
 					:disabled="!hasEdits"
 					@click="$emit('save')"
@@ -527,6 +595,32 @@ onMounted(() => {
 	flex-shrink: 0;
 }
 
+.mode-toggle-section {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.25rem 0.75rem;
+	background: var(--theme--background-subdued);
+	border-radius: var(--theme--border-radius);
+	border: 1px solid var(--theme--border-color);
+}
+
+.mode-label {
+	font-size: 0.875rem;
+	color: var(--theme--foreground-subdued);
+	font-weight: 500;
+	min-width: 30px;
+}
+
+.mode-toggle {
+	transition: all 0.2s ease;
+}
+
+.mode-toggle:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
 .back-button {
 	color: var(--theme--foreground-subdued);
 	border-color: var(--theme--border-color);
@@ -537,15 +631,9 @@ onMounted(() => {
 	border-color: var(--theme--border-color-accent);
 }
 
-.info-button {
-	color: var(--theme--foreground-subdued);
-	border-color: var(--theme--border-color);
-}
 
-.info-button:hover {
-	color: var(--theme--foreground);
-	border-color: var(--theme--border-color-accent);
-}
+
+
 
 .save-button {
 	background: var(--theme--primary);
