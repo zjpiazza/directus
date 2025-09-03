@@ -1,7 +1,30 @@
 <template>
-	<div class="process-map-container">
-		<!-- Header -->
-		<div class="process-map-header">
+	<div class="process-map-container" :class="{ 'custom-header-active': shouldUseCustomHeader }">
+		<!-- Custom Header Integration -->
+		<component
+			v-if="shouldUseCustomHeader"
+			:is="customHeaderComponent"
+			:collection="collection || ''"
+			:primary-key="primaryKey?.toString() || null"
+			:title="title"
+			:has-edits="false"
+			:saving="saving || false"
+			:is-new="isNew || false"
+			:collection-info="collectionInfo"
+			:item="item"
+			:validation-errors="validationErrors || []"
+			:selected-program="selectedProgram"
+			:programs="programs"
+			@save="emit('save')"
+			@delete="emit('delete')"
+			@archive="emit('archive')"
+			@refresh="emit('refresh')"
+			@save-as-copy="emit('save-as-copy')"
+			@program-change="onProgramChange"
+		/>
+
+		<!-- Default Header (when not using custom header) -->
+		<div v-else class="process-map-header">
 			<div class="info-icon">
 				<v-icon name="info" />
 			</div>
@@ -87,6 +110,13 @@ import { VueFlow, PanOnScrollMode, useVueFlow } from '@vue-flow/core';
 import { Background } from '@vue-flow/background';
 import { Controls } from '@vue-flow/controls';
 import type { Node, Edge } from '@vue-flow/core';
+
+// Import custom header components
+import CustomHeaderBasic from '../custom-headers/custom-header-basic.vue';
+import CustomHeaderMinimal from '../custom-headers/custom-header-minimal.vue';
+import CustomHeaderAdvanced from '../custom-headers/custom-header-advanced.vue';
+import CustomHeaderProcessMap from '../custom-headers/custom-header-process-map.vue';
+
 import PhaseNode from '../flow-nodes/PhaseNode.vue';
 import DecisionNode from '../flow-nodes/DecisionNode.vue';
 import { useApi } from '@directus/composables';
@@ -96,6 +126,16 @@ interface Props {
 	collection?: string;
 	field?: string;
 	primaryKey?: string | number;
+	// Additional props from item.vue
+	isNew?: boolean;
+	item?: Record<string, any> | null;
+	edits?: Record<string, any>;
+	fields?: any[];
+	loading?: boolean;
+	saving?: boolean;
+	validationErrors?: any[];
+	collectionInfo?: any;
+	permissions?: any;
 }
 
 interface WorkflowItem {
@@ -113,6 +153,43 @@ interface Phase {
 }
 
 const props = defineProps<Props>();
+
+const emit = defineEmits<{
+	'update:edits': [value: Record<string, any>];
+	save: [];
+	refresh: [];
+	delete: [];
+	archive: [];
+	'save-as-copy': [];
+}>();
+
+// Custom header logic
+const shouldUseCustomHeader = computed(() => {
+	const customHeader = (props.collectionInfo?.meta as any)?.custom_header_component;
+	return !!customHeader && customHeader !== null;
+});
+
+const customHeaderName = computed(() => {
+	return (props.collectionInfo?.meta as any)?.custom_header_component || 'custom-header-basic';
+});
+
+const customHeaders = {
+	'custom-header-basic': CustomHeaderBasic,
+	'custom-header-minimal': CustomHeaderMinimal,
+	'custom-header-advanced': CustomHeaderAdvanced,
+	'custom-header-process-map': CustomHeaderProcessMap,
+};
+
+const customHeaderComponent = computed(() => {
+	const componentName = customHeaderName.value;
+	return customHeaders[componentName as keyof typeof customHeaders] || CustomHeaderBasic;
+});
+
+const title = computed(() => {
+	return props.isNew 
+		? `Creating ${props.collectionInfo?.name || props.collection}` 
+		: `Editing ${props.collectionInfo?.name || props.collection}`;
+});
 
 // API composable for fetching programs
 const api = useApi();
@@ -349,6 +426,12 @@ function openWorkflow(workflowId: string) {
 
 // Initialize from props
 onMounted(async () => {
+	// Hide the default Directus header
+	const headerBar = document.querySelector('.header-bar');
+	if (headerBar) {
+		(headerBar as HTMLElement).style.display = 'none';
+	}
+	
 	// Fetch programs on component mount
 	await fetchPrograms();
 	
@@ -582,5 +665,19 @@ onMounted(async () => {
 
 .vue-flow.zoom-large :deep(.vue-flow__node) {
 	transform-origin: center;
+}
+
+/* Hide the default Directus header when using custom header */
+:deep(.header-bar) {
+	display: none !important;
+}
+
+/* Alternative selectors to ensure header is hidden */
+:deep(header.header-bar) {
+	display: none !important;
+}
+
+:deep(.private-view .header-bar) {
+	display: none !important;
 }
 </style>

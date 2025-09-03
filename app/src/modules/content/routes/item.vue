@@ -31,6 +31,12 @@ import CustomTabbed from '../../../components/custom-editors/custom-tabbed.vue';
 import VisualFlowBuilder from '../../../components/custom-editors/visual-flow-builder.vue';
 import ProcessMap from '../../../components/custom-editors/process-map.vue';
 
+// Import custom header components
+import CustomHeaderBasic from '../../../components/custom-headers/custom-header-basic.vue';
+import CustomHeaderMinimal from '../../../components/custom-headers/custom-header-minimal.vue';
+import CustomHeaderAdvanced from '../../../components/custom-headers/custom-header-advanced.vue';
+import CustomHeaderProcessMap from '../../../components/custom-headers/custom-header-process-map.vue';
+
 interface Props {
 	collection: string;
 	primaryKey?: string | null;

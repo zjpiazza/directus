@@ -61,7 +61,7 @@ onUnmounted(() => {
 				<slot name="title">
 					<slot name="title:prepend" />
 					<h1 class="type-title">
-						<v-text-overflow :text="title" placement="bottom">{{ title }}</v-text-overflow>
+						<v-text-overflow :text="title" placement="bottom" />
 					</h1>
 					<slot name="title:append" />
 				</slot>

@@ -83,6 +83,16 @@ This document outlines the rules and guidelines for the AI coding assistant to f
 *   In the Process Map component, the program dropdown should be right aligned and have a width of `300px`.
 *   In the Process Map component, all nodes should use the same font size.
 *   In the Process Map component, the nodes on the canvas should react to viewport changes.
+*   When adding a custom header component to a collection:
+    *   Add a `custom_header_component` field to the collection metadata.
+    *   Create a migration for this new field.
+    *   Update the collection types to include this field (e.g., in `collections.yaml`).
+    *   Create the custom header component (basic and/or advanced).
+    *   Modify the content module's item route to use custom headers when specified.
+    *   Apply the database migration to add the `custom_header_component` field to the database.
+    *   In the `item.vue` file, use the `#header` slot of `private-view` to override the entire header area when using custom headers.
+    *   Ensure that when a custom header is used, the original header elements (title, headline, actions) are hidden.
+    *   Custom headers should be integrated into custom item components (like ProcessMap) rather than replacing the standard Directus header. Specifically, when a collection uses a custom item component AND has a custom header configured, the custom header should replace the standard editor header within the custom item component.
 
 ## DEBUGGING
 
