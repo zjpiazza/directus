@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, nextTick, provide, onMounted } from 'vue';
+import { computed, ref, watch, nextTick, provide, onMounted, onUnmounted } from 'vue';
 import { VueFlow, ConnectionMode, useVueFlow } from '@vue-flow/core';
 import type { Node, Edge, EdgeUpdateEvent, Connection } from '@vue-flow/core';
 import { Controls } from '@vue-flow/controls';
@@ -65,6 +65,10 @@ const currentWorkflowId = computed(() => props.primaryKey || props.item?.id || '
 // Mode-based behavior
 const isEditMode = computed(() => props.mode === 'edit');
 const isViewMode = computed(() => props.mode === 'view');
+
+// Follow mode state
+const followMode = ref(false);
+const focusedNodeId = ref<string | null>(null);
 const availableWorkflows = ref<Array<{ id: string; name: string }>>([]);
 
 // Provide API and current workflow ID to child components
@@ -149,7 +153,7 @@ const openCollection = (collectionName: string) => {
 };
 
 // Vue Flow composable
-const { project, fitView, updateEdge } = useVueFlow();
+const { project, fitView, updateEdge, zoomTo, getViewport, setViewport } = useVueFlow();
 
 // Flow state
 const selectedNode = ref<Node | null>(null);
@@ -246,8 +250,16 @@ onMounted(() => {
 		}
 	}
 	
+	// Add keyboard event listener for follow mode navigation
+	document.addEventListener('keydown', handleKeyDown);
+	
 	fetchWorkflows();
 	fetchCollections();
+});
+
+onUnmounted(() => {
+	// Clean up keyboard event listener
+	document.removeEventListener('keydown', handleKeyDown);
 });
 
 // Initialize flow data from item
@@ -322,6 +334,164 @@ function handleUpdateFlowName(name: string) {
 
 function handleModeChange(newMode: 'edit' | 'view') {
 	emit('update:mode', newMode);
+}
+
+// Follow mode functionality
+function toggleFollowMode(enabled: boolean) {
+	followMode.value = enabled;
+	
+	if (enabled) {
+		// If no node is focused, focus on the first node
+		if (!focusedNodeId.value && flowNodes.value.length > 0) {
+			const firstNode = flowNodes.value[0];
+			if (firstNode?.id) {
+				focusOnNode(firstNode.id);
+			}
+		} else if (focusedNodeId.value) {
+			// Re-focus on current node to zoom in
+			focusOnNode(focusedNodeId.value);
+		}
+	} else {
+		// Remove focused class from all nodes when follow mode is disabled
+		flowNodes.value.forEach(n => {
+			if (n.class && typeof n.class === 'string') {
+				n.class = n.class.replace(/\s*(focused|decision-focused)\s*/g, ' ').trim();
+			}
+		});
+		focusedNodeId.value = null;
+	}
+}
+
+function focusOnNode(nodeId: string) {
+	const node = flowNodes.value.find(n => n.id === nodeId);
+	if (!node) return;
+	
+	focusedNodeId.value = nodeId;
+	
+	// Remove focused class from all nodes
+	flowNodes.value.forEach(n => {
+		if (n.class && typeof n.class === 'string') {
+			n.class = n.class.replace(/\s*(focused|decision-focused)\s*/g, ' ').trim();
+		}
+	});
+	
+	// Add focused class to the target node
+	const targetNode = flowNodes.value.find(n => n.id === nodeId);
+	if (targetNode) {
+		const currentClass = typeof targetNode.class === 'string' ? targetNode.class : '';
+		// Add both focused class and type-specific class for styling
+		const focusClass = targetNode.type === 'decision' ? ' focused decision-focused' : ' focused';
+		targetNode.class = (currentClass + focusClass).trim();
+	}
+	
+	// Move the viewport to the node with smooth animation
+	fitView({
+		nodes: [nodeId],
+		duration: 400,
+		padding: 0.3,
+		maxZoom: 1.5,
+		minZoom: 1.2
+	});
+}
+
+// Get connected nodes based on direction
+function getConnectedNode(nodeId: string, direction: 'up' | 'down' | 'left' | 'right'): string | null {
+	const edges = flowEdges.value;
+	const currentNode = flowNodes.value.find(n => n.id === nodeId);
+	if (!currentNode) return null;
+	
+	// Find edges connected to this node
+	const connectedEdges = edges.filter(edge => 
+		edge.source === nodeId || edge.target === nodeId
+	);
+	
+	// For simplicity, we'll use a basic approach:
+	// up/down: follow output/input connections
+	// left/right: find nodes to the left/right based on position
+	
+	if (direction === 'down') {
+		// Follow outgoing connections (this node is source)
+		const outgoingEdge = connectedEdges.find(edge => edge.source === nodeId);
+		return outgoingEdge?.target || null;
+	}
+	
+	if (direction === 'up') {
+		// Follow incoming connections (this node is target)
+		const incomingEdge = connectedEdges.find(edge => edge.target === nodeId);
+		return incomingEdge?.source || null;
+	}
+	
+	// For left/right, find nearest node in that direction
+	const allNodes = flowNodes.value.filter(n => n && n.id !== nodeId);
+	const currentPos = currentNode.position;
+	
+	let targetNodes = allNodes;
+	
+	if (direction === 'left') {
+		targetNodes = allNodes.filter(n => n && n.position && n.position.x < currentPos.x);
+	} else if (direction === 'right') {
+		targetNodes = allNodes.filter(n => n && n.position && n.position.x > currentPos.x);
+	}
+	
+	// Find the closest node
+	if (targetNodes.length === 0) return null;
+	
+	let closest = targetNodes[0];
+	if (!closest || !closest.position) return null;
+	
+	for (let i = 1; i < targetNodes.length; i++) {
+		const node = targetNodes[i];
+		if (!node || !node.position) continue;
+		
+		const closestDist = Math.sqrt(
+			Math.pow(currentPos.x - closest.position.x, 2) + 
+			Math.pow(currentPos.y - closest.position.y, 2)
+		);
+		const nodeDist = Math.sqrt(
+			Math.pow(currentPos.x - node.position.x, 2) + 
+			Math.pow(currentPos.y - node.position.y, 2)
+		);
+		if (nodeDist < closestDist) {
+			closest = node;
+		}
+	}
+	
+	return closest?.id || null;
+}
+
+// Navigate between nodes using arrow keys
+function navigateNode(direction: 'up' | 'down' | 'left' | 'right') {
+	if (!followMode.value || !focusedNodeId.value) return;
+	
+	const nextNodeId = getConnectedNode(focusedNodeId.value, direction);
+	if (nextNodeId) {
+		focusOnNode(nextNodeId);
+	}
+}
+
+// Handle keyboard navigation
+function handleKeyDown(event: KeyboardEvent) {
+	if (!followMode.value) return;
+	
+	// Prevent default behavior for arrow keys
+	if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(event.key)) {
+		event.preventDefault();
+		
+		switch (event.key) {
+			case 'ArrowUp':
+				navigateNode('up');
+				break;
+			case 'ArrowDown':
+				navigateNode('down');
+				break;
+			case 'ArrowLeft':
+				navigateNode('left');
+				break;
+			case 'ArrowRight':
+				navigateNode('right');
+				break;
+		}
+	}
 }
 
 // Node palette drag and drop
@@ -504,6 +674,7 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 			:flow-name="edits.name ?? item?.name ?? ''"
 			:mode="mode"
 			:can-edit="canEdit"
+			:follow-mode="followMode"
 			@save="emit('save')"
 			@delete="emit('delete')"
 			@archive="emit('archive')"
@@ -511,6 +682,7 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 			@save-as-copy="emit('save-as-copy')"
 			@update-flow-name="handleUpdateFlowName"
 			@update-mode="handleModeChange"
+			@toggle-follow-mode="toggleFollowMode"
 		/>
 
 		<div class="visual-flow-builder-editor" :class="{ 'hide-default-header': shouldUseCustomHeader }">
@@ -582,7 +754,7 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 						:nodes-draggable="isEditMode"
 						:edges-updatable="isEditMode"
 						:edges-reconnectable="isEditMode"
-						:connection-mode="isEditMode ? ConnectionMode.Loose : ConnectionMode.Strict"
+						:connection-mode="ConnectionMode.Loose"
 						:elements-selectable="true"
 						:default-viewport="{ x: 0, y: 0, zoom: 1 }"
 						:min-zoom="0.1"
@@ -970,6 +1142,71 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 	flex-direction: column;
 	gap: 1.5rem;
 	z-index: 10;
+}
+
+/* Follow mode focused node indicator */
+:deep(.vue-flow__node.focused) {
+	z-index: 1000 !important;
+}
+
+/* Hide default Vue Flow selection styling when focused */
+:deep(.vue-flow__node.focused.selected) {
+	outline: none !important;
+	box-shadow: none !important;
+}
+
+:deep(.vue-flow__node.focused .vue-flow__node-default) {
+	outline: none !important;
+	box-shadow: none !important;
+}
+
+/* Custom focus styling that matches node shapes */
+:deep(.vue-flow__node.focused .node-content) {
+	position: relative;
+	transition: all 0.3s ease !important;
+}
+
+:deep(.vue-flow__node.focused .node-content::before) {
+	content: '';
+	position: absolute;
+	top: -4px;
+	left: -4px;
+	right: -4px;
+	bottom: -4px;
+	border: 3px solid var(--theme--primary);
+	border-radius: inherit;
+	pointer-events: none;
+	z-index: -1;
+	transition: all 0.3s ease;
+}
+
+/* Special handling for diamond-shaped decision nodes */
+:deep(.vue-flow__node.decision-focused .node-content::before) {
+	transform: rotate(45deg);
+	border-radius: 0;
+}
+
+/* Override DecisionNode component's selected styling when focused */
+:deep(.vue-flow__node.decision-focused .decision-node .diamond-shape) {
+	border-color: transparent !important;
+	box-shadow: none !important;
+	transform: rotate(45deg) !important; /* Remove the scale */
+}
+
+/* Also override when node is just selected (not focused) */
+:deep(.decision-node.selected .diamond-shape) {
+	border-color: transparent !important;
+	box-shadow: none !important;
+}
+
+/* Nuclear option: Remove ALL DecisionNode borders */
+:deep(.decision-node .diamond-shape) {
+	border: none !important;
+}
+
+/* Restore the original border only when NOT focused */
+:deep(.vue-flow__node:not(.decision-focused) .decision-node .diamond-shape) {
+	border: 2px solid #d97706 !important;
 }
 
 .sidebar-section {

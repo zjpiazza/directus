@@ -43,6 +43,8 @@
 			<VueFlow
 				v-model:nodes="flowNodes"
 				v-model:edges="flowEdges"
+				snap-to-grid
+				:snap-grid="[20, 20]"
 				:zoom-on-scroll="true"
 				:zoom-on-pinch="true"
 				:zoom-on-double-click="false"
@@ -68,7 +70,11 @@
 				<Background pattern-color="#e5e7eb" :gap="20" />
 
 				<!-- Controls -->
-				<Controls />
+				<Controls>
+					<div class="vue-flow__controls-button" @click="freezeCurrentState" :disabled="isSaving">
+						<v-icon :name="isSaving ? 'hourglass_empty' : 'save'" />
+					</div>
+				</Controls>
 			</VueFlow>
 		</div>
 
@@ -196,7 +202,7 @@ const selectedProgram = ref<string | null>(null);
 const workflowLinks = ref<Array<any>>([]);
 
 // Vue Flow viewport reactivity
-const { getViewport, onInit } = useVueFlow();
+const { getViewport, setViewport, onInit } = useVueFlow();
 const currentZoom = ref(1);
 const viewportScale = computed(() => {
 	// Create a responsive scale factor based on viewport zoom and screen size
@@ -218,6 +224,91 @@ onInit(() => {
 		currentZoom.value = viewport.zoom;
 	}
 });
+
+// Freeze/Save viewport and node positions
+const isSaving = ref(false);
+
+async function freezeCurrentState() {
+	try {
+		isSaving.value = true;
+		
+		// Get current viewport state
+		const viewport = getViewport();
+		
+		// Prepare the frozen state data
+		const frozenState = {
+			viewport: {
+				x: viewport.x,
+				y: viewport.y,
+				zoom: viewport.zoom
+			},
+			nodes: flowNodes.value.map(node => ({
+				id: node.id,
+				position: { ...node.position },
+				type: node.type,
+				data: { ...node.data }
+			})),
+			edges: flowEdges.value.map(edge => ({
+				id: edge.id,
+				source: edge.source,
+				target: edge.target,
+				type: edge.type
+			}))
+		};
+
+		// For singletons, use the collection name directly
+		const endpoint = props.primaryKey && props.primaryKey !== '+' 
+			? `/items/${props.collection}/${props.primaryKey}`
+			: `/items/${props.collection}`;
+
+		await api.patch(endpoint, {
+			state: frozenState
+		});
+
+		console.log('Process map state frozen successfully');
+		
+	} catch (error) {
+		console.error('Failed to freeze process map state:', error);
+	} finally {
+		isSaving.value = false;
+	}
+}
+
+// Load frozen state if it exists
+async function loadFrozenState() {
+	try {
+		// For singletons, use the collection name directly
+		const endpoint = props.primaryKey && props.primaryKey !== '+' 
+			? `/items/${props.collection}/${props.primaryKey}?fields=state`
+			: `/items/${props.collection}?fields=state`;
+
+		const response = await api.get(endpoint);
+		const frozenState = response.data.data?.state;
+
+		if (frozenState) {
+			// Restore viewport
+			if (frozenState.viewport) {
+				setTimeout(() => {
+					setViewport(frozenState.viewport);
+				}, 100); // Small delay to ensure Vue Flow is ready
+			}
+
+			// Restore node positions if they exist
+			if (frozenState.nodes) {
+				frozenState.nodes.forEach((frozenNode: any) => {
+					const existingNode = flowNodes.value.find(node => node.id === frozenNode.id);
+					if (existingNode) {
+						existingNode.position = frozenNode.position;
+					}
+				});
+			}
+
+			console.log('Frozen state loaded successfully');
+		}
+	} catch (error) {
+		console.error('Failed to load frozen state:', error);
+	}
+}
 
 // Function to fetch programs from the collection
 async function fetchPrograms() {
@@ -438,6 +529,9 @@ onMounted(async () => {
 			await fetchWorkflowLinks();
 		}
 	}
+	
+	// Load frozen state (viewport and node positions) if it exists
+	await loadFrozenState();
 });
 </script>
 
@@ -659,6 +753,41 @@ onMounted(async () => {
 
 .vue-flow.zoom-large :deep(.vue-flow__node) {
 	transform-origin: center;
+}
+
+/* Custom freeze button styling */
+:deep(.vue-flow__controls-button) {
+	background: var(--theme--background);
+	border: 1px solid var(--theme--border-color);
+	border-radius: var(--theme--border-radius);
+	color: var(--theme--foreground);
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.5rem 0.75rem;
+	font-size: 0.875rem;
+	font-weight: 500;
+	transition: all 0.2s ease;
+	margin-top: 0.5rem;
+}
+
+:deep(.vue-flow__controls-button:hover) {
+	background: var(--theme--background-accent);
+	border-color: var(--theme--border-color-accent);
+	transform: translateY(-1px);
+	box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+:deep(.vue-flow__controls-button:disabled) {
+	opacity: 0.6;
+	cursor: not-allowed;
+	transform: none;
+	box-shadow: none;
+}
+
+:deep(.vue-flow__controls-button .v-icon) {
+	font-size: 16px;
 }
 
 /* Hide the default Directus header when using custom header */

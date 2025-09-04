@@ -483,3 +483,15 @@ Let me check the current state of the component and fix the layout issue. The pr
 
 ---
 
+_**User (2025-09-03 20:32Z)**_
+
+in the process map, please enable snap to grid, and in the control bar with the zoom buttoms, i want another button to "freeze" the current state including zoom, node positions to the collection.
+
+---
+
+_**Assistant**_
+
+
+
+---
+

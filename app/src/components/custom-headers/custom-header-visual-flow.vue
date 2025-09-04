@@ -21,6 +21,7 @@ interface Props {
 	flowDescription?: string;
 	mode?: 'edit' | 'view';
 	canEdit?: boolean;
+	followMode?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -32,6 +33,7 @@ const props = withDefaults(defineProps<Props>(), {
 	flowDescription: '',
 	mode: 'edit',
 	canEdit: true,
+	followMode: false,
 });
 
 const emit = defineEmits<{
@@ -45,6 +47,7 @@ const emit = defineEmits<{
 	'update-flow-name': [name: string];
 	'update-flow-description': [description: string];
 	'update-mode': [mode: 'edit' | 'view'];
+	'toggle-follow-mode': [enabled: boolean];
 }>();
 
 const { t } = useI18n();
@@ -163,6 +166,11 @@ function toggleMode() {
 	
 	const newMode = props.mode === 'edit' ? 'view' : 'edit';
 	emit('update-mode', newMode);
+}
+
+// Toggle follow mode
+function toggleFollowMode() {
+	emit('toggle-follow-mode', !props.followMode);
 }
 
 // Watch for changes in key props to detect navigation needs
@@ -339,10 +347,6 @@ onMounted(() => {
 					<v-icon name="arrow_back" />
 				</v-button>
 
-				<div class="flow-icon">
-					<v-icon name="account_tree" />
-				</div>
-
 				<div class="title-section">
 					<div class="flow-title-input">
 						<v-input
@@ -396,6 +400,19 @@ onMounted(() => {
 					>
 						<v-icon :name="isEditMode ? 'edit' : 'visibility'" />
 						{{ isEditMode ? 'View' : 'Edit' }}
+					</v-button>
+				</div>
+
+				<!-- Follow Mode Toggle -->
+				<div class="follow-toggle-section">
+					<v-button
+						:kind="followMode ? 'primary' : 'secondary'"
+						@click="toggleFollowMode"
+						class="follow-toggle"
+						small
+					>
+						<v-icon :name="followMode ? 'gps_fixed' : 'gps_not_fixed'" />
+						{{ followMode ? 'Following' : 'Follow' }}
 					</v-button>
 				</div>
 
@@ -619,6 +636,20 @@ onMounted(() => {
 .mode-toggle:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
+}
+
+.follow-toggle-section {
+	display: flex;
+	align-items: center;
+	gap: 0.5rem;
+	padding: 0.25rem 0.75rem;
+	background: var(--theme--background-subdued);
+	border-radius: var(--theme--border-radius);
+	border: 1px solid var(--theme--border-color);
+}
+
+.follow-toggle {
+	transition: all 0.2s ease;
 }
 
 .back-button {

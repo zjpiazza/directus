@@ -93,6 +93,8 @@ This document outlines the rules and guidelines for the AI coding assistant to f
     *   In the `item.vue` file, use the `#header` slot of `private-view` to override the entire header area when using custom headers.
     *   Ensure that when a custom header is used, the original header elements (title, headline, actions) are hidden.
     *   Custom headers should be integrated into custom item components (like ProcessMap) rather than replacing the standard Directus header. Specifically, when a collection uses a custom item component AND has a custom header configured, the custom header should replace the standard editor header within the custom item component.
+*   In the Process Map, enable snap to grid.
+*   In the Process Map control bar, add a button to "freeze" the current state (zoom, node positions) to the collection.
 
 ## DEBUGGING
 

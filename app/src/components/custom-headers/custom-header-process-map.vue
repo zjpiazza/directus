@@ -125,9 +125,6 @@ onMounted(() => {
 				</v-button>
 
 				<div class="title-section">
-					<div class="info-icon">
-						<v-icon name="info" />
-					</div>
 					<h1 class="header-title">Framework (Standard CPS Framework)</h1>
 				</div>
 			</div>
@@ -141,6 +138,7 @@ onMounted(() => {
 						item-text="name"
 						item-value="id"
 						placeholder="Select Program"
+						show-empty
 						@update:model-value="onProgramChange"
 					/>
 				</div>
@@ -157,66 +155,76 @@ onMounted(() => {
 
 .header-top {
 	display: flex;
-	justify-content: space-between;
 	align-items: center;
-	padding: 12px 24px;
+	justify-content: space-between;
+	padding: 0.375rem 1.5rem;
+	background: var(--theme--background-subdued);
 	border-bottom: 1px solid var(--theme--border-color-subdued);
+	block-size: calc(60px + var(--theme--navigation--project--border-width));
 }
 
 .breadcrumbs {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: 0.25rem;
+	font-size: 0.875rem;
 }
 
 .breadcrumb-link {
-	color: var(--theme--foreground-subdued);
+	color: var(--theme--primary);
 	text-decoration: none;
-	font-size: 14px;
+	transition: color 0.2s;
 }
 
 .breadcrumb-link:hover {
-	color: var(--theme--foreground);
+	color: var(--theme--primary-accent);
 }
 
 .breadcrumb-current {
-	color: var(--theme--foreground);
-	font-size: 14px;
+	color: var(--theme--foreground-subdued);
 	font-weight: 500;
 }
 
 .breadcrumb-separator {
 	color: var(--theme--foreground-subdued);
+	margin: 0 0.25rem;
 }
 
 .header-main {
 	display: flex;
 	align-items: center;
-	padding: 16px 24px;
-	gap: 24px;
+	justify-content: space-between;
+	padding: 1rem 1.5rem;
+	min-height: 70px;
+	background: var(--theme--background);
+	color: var(--theme--foreground);
+	border-bottom: 1px solid var(--theme--border-color);
 }
 
 .header-left {
 	display: flex;
 	align-items: center;
-	gap: 16px;
+	gap: 1rem;
 	flex: 1;
+	min-width: 0;
 }
 
 .back-button {
-	--v-button-background-color: transparent;
-	--v-button-color: var(--theme--foreground-subdued);
+	color: var(--theme--foreground-subdued);
+	border-color: var(--theme--border-color);
 }
 
 .back-button:hover {
-	--v-button-background-color: var(--theme--background-accent);
-	--v-button-color: var(--theme--foreground);
+	color: var(--theme--foreground);
+	border-color: var(--theme--border-color-accent);
 }
 
 .title-section {
 	display: flex;
-	align-items: center;
-	gap: 12px;
+	flex-direction: column;
+	gap: 0.5rem;
+	flex: 1;
+	min-width: 0;
 }
 
 .info-icon {
@@ -231,33 +239,52 @@ onMounted(() => {
 }
 
 .header-title {
-	font-size: 20px;
-	font-weight: 600;
 	color: var(--theme--foreground);
+	font-size: 1.25rem;
+	font-weight: 600;
 	margin: 0;
 }
 
 .header-center {
 	display: flex;
 	align-items: center;
-	gap: 16px;
+	gap: 1rem;
+	flex-shrink: 0;
 }
 
 .program-selector {
 	display: flex;
 	align-items: center;
-	gap: 8px;
+	gap: 0.5rem;
 	min-width: 200px;
+	width: 400px;
 }
 
 .program-selector label {
-	font-size: 14px;
-	font-weight: 500;
-	color: var(--theme--foreground-subdued);
+	font-size: 1rem;
+	font-weight: 600;
+	color: var(--theme--foreground);
 	white-space: nowrap;
 }
 
 .program-selector .v-select {
-	min-width: 150px;
+	width: 300px;
+}
+
+/* Ensure dropdown text is visible */
+:deep(.v-select .v-field__input) {
+	color: var(--theme--foreground) !important;
+}
+
+:deep(.v-select .v-field__field) {
+	color: var(--theme--foreground) !important;
+}
+
+:deep(.v-select .v-select__selection-text) {
+	color: var(--theme--foreground) !important;
+}
+
+:deep(.v-list-item-title) {
+	color: var(--theme--foreground) !important;
 }
 </style> 

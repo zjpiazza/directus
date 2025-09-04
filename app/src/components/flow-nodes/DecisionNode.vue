@@ -55,12 +55,12 @@ defineProps<Props>();
 <style scoped>
 .decision-node {
 	position: relative;
-	width: calc(6.4vw + 1.6rem);
-	height: calc(6.4vw + 1.6rem);
-	min-width: 48px;
-	min-height: 48px;
-	max-width: 96px;
-	max-height: 96px;
+	width: calc(8vw + 2rem);
+	height: calc(8vw + 2rem);
+	min-width: 80px;
+	min-height: 80px;
+	max-width: 120px;
+	max-height: 120px;
 }
 
 .diamond-shape {
@@ -93,8 +93,8 @@ defineProps<Props>();
 	transform: rotate(-45deg);
 	text-align: center;
 	color: black;
-	padding: calc(0.4vw + 0.16rem);
-	max-width: calc(4.8vw + 0.8rem);
+	padding: calc(0.5vw + 0.2rem);
+	max-width: calc(6vw + 1.2rem);
 	font-size: calc(0.512vw + 0.384rem);
 }
 
