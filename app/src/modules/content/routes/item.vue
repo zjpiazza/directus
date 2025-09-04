@@ -24,19 +24,6 @@ import { useRouter, useRoute } from 'vue-router';
 import ContentNavigation from '../components/navigation.vue';
 import VersionMenu from '../components/version-menu.vue';
 import ContentNotFound from './not-found.vue';
-// Import your custom components here
-import CustomBasic from '../../../components/custom-editors/custom-basic.vue';
-import CustomAdvanced from '../../../components/custom-editors/custom-advanced.vue';
-import CustomTabbed from '../../../components/custom-editors/custom-tabbed.vue';
-import WorkflowsBuilder from '../../../components/custom-editors/workflows-builder.vue';
-import ProcessMap from '../../../components/custom-editors/process-map.vue';
-
-// Import custom header components
-import CustomHeaderBasic from '../../../components/custom-headers/custom-header-basic.vue';
-import CustomHeaderMinimal from '../../../components/custom-headers/custom-header-minimal.vue';
-import CustomHeaderAdvanced from '../../../components/custom-headers/custom-header-advanced.vue';
-import CustomHeaderProcessMap from '../../../components/custom-headers/custom-header-process-map.vue';
-import CustomHeaderWorkflows from '../../../components/custom-headers/custom-header-workflows.vue';
 
 interface Props {
 	collection: string;
@@ -97,13 +84,6 @@ const {
 	validationErrors: itemValidationErrors,
 } = useItem(collection, primaryKey, query);
 
-// Mode state for custom components that support view/edit toggle
-const currentMode = ref<'edit' | 'view'>('edit');
-
-function updateMode(mode: 'edit' | 'view') {
-	currentMode.value = mode;
-}
-
 const validationErrors = computed(() => {
 	if (currentVersion.value === null) return itemValidationErrors.value;
 	return versionValidationErrors.value;
@@ -119,33 +99,6 @@ const { templateData } = useTemplateData(collectionInfo, primaryKey);
 const { confirmLeave, leaveTo } = useEditsGuard(hasEdits, { compareQuery: ['version'] });
 const confirmDelete = ref(false);
 const confirmArchive = ref(false);
-
-// Custom component logic - reads from collection meta
-const shouldUseCustomEditor = computed(() => {
-	// Check if collection has a custom component configured
-	const customComponent = collectionInfo.value?.meta?.custom_item_component;
-	return !!customComponent && customComponent !== null;
-});
-
-// Get the specific custom component to use
-const customComponentName = computed(() => {
-	return collectionInfo.value?.meta?.custom_item_component || 'custom-basic';
-});
-
-// Map component names to actual components
-const customComponents = {
-	'custom-basic': CustomBasic,
-	'custom-advanced': CustomAdvanced,
-	'custom-tabbed': CustomTabbed,
-	'workflows-builder': WorkflowsBuilder,
-	'process-map': ProcessMap,
-};
-
-// Get the actual component to render
-const customComponent = computed(() => {
-	const componentName = customComponentName.value;
-	return customComponents[componentName as keyof typeof customComponents] || CustomBasic;
-});
 
 const title = computed(() => {
 	if (te(`collection_names_singular.${props.collection}`)) {
@@ -778,33 +731,7 @@ function useCollectionRoute() {
 			<content-navigation :current-collection="collection" />
 		</template>
 
-		<!-- Dynamic Custom Item Editor -->
-		<component
-			:is="customComponent"
-			v-if="shouldUseCustomEditor"
-			:collection="collection"
-			:primary-key="primaryKey"
-			:is-new="isNew"
-			:item="item"
-			:edits="edits"
-			:fields="fields"
-			:loading="loading"
-			:saving="saving"
-			:validation-errors="validationErrors"
-			:collection-info="collectionInfo"
-			:permissions="permissions"
-			:mode="currentMode"
-			@update:edits="edits = $event"
-			@update:mode="updateMode"
-			@save="saveAndStay"
-			@delete="deleteAndQuit"
-			@archive="toggleArchive"
-			@refresh="refresh"
-		/>
-
-		<!-- Default Directus Form -->
 		<v-form
-			v-else
 			ref="form"
 			v-model="edits"
 			:autofocus="isNew"
