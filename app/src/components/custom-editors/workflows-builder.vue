@@ -155,6 +155,7 @@ const openCollection = (collectionName: string) => {
 // Vue Flow composable
 const { project, fitView, updateEdge, zoomTo, getViewport, setViewport } = useVueFlow();
 
+
 // Flow state
 const selectedNode = ref<Node | null>(null);
 const availableCollections = ref<any[]>([]);
@@ -503,6 +504,8 @@ function onDragStart(event: DragEvent, nodeType: any) {
 }
 
 function onDragOver(event: DragEvent) {
+	if (!isEditMode.value) return;
+	
 	event.preventDefault();
 
 	if (event.dataTransfer) {
@@ -517,6 +520,8 @@ function onDragOver(event: DragEvent) {
 }
 
 function onDragLeave(event: DragEvent) {
+	if (!isEditMode.value) return;
+	
 	// Remove visual feedback when leaving the drop zone
 	const canvasElement = document.querySelector('.canvas-container') as HTMLElement;
 	if (canvasElement && !canvasElement.contains(event.relatedTarget as HTMLElement)) {
@@ -525,6 +530,8 @@ function onDragLeave(event: DragEvent) {
 }
 
 function onDrop(event: DragEvent) {
+	if (!isEditMode.value) return;
+	
 	const data = event.dataTransfer?.getData('application/vueflow');
 
 	// Remove visual feedback
@@ -742,9 +749,9 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 				<div 
 					class="canvas-container"
 					:class="{ 'full-width': isViewMode }"
-					@drop="isEditMode ? onDrop : undefined"
-					@dragover="isEditMode ? onDragOver : undefined"
-					@dragleave="isEditMode ? onDragLeave : undefined"
+					@drop="onDrop"
+					@dragover="onDragOver"
+					@dragleave="onDragLeave"
 				>
 					<VueFlow
 						v-model:nodes="flowNodes"

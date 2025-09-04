@@ -160,13 +160,7 @@ function updateFlowName(name: string) {
 	}
 }
 
-// Toggle between view and edit modes
-function toggleMode() {
-	if (!props.canEdit) return; // Disabled if user doesn't have edit permissions
-	
-	const newMode = props.mode === 'edit' ? 'view' : 'edit';
-	emit('update-mode', newMode);
-}
+
 
 // Toggle follow mode
 function toggleFollowMode() {
@@ -353,8 +347,8 @@ onMounted(() => {
 							:model-value="localFlowName"
 							placeholder="Enter flow name..."
 							class="flow-name-input"
-							:readonly="isViewMode"
-							@update:model-value="isEditMode ? updateFlowName : undefined"
+							:disabled="isViewMode"
+							@update:model-value="updateFlowName"
 						/>
 					</div>
 					
@@ -390,26 +384,31 @@ onMounted(() => {
 			<div class="header-right">
 				<!-- Mode Toggle Switch -->
 				<div class="mode-toggle-section">
-					<span class="mode-label">{{ isEditMode ? 'Edit' : 'View' }}</span>
-					<v-button
-						:kind="isEditMode ? 'primary' : 'secondary'"
-						:disabled="!canEdit"
-						@click="toggleMode"
-						class="mode-toggle"
-						small
-					>
-						<v-icon :name="isEditMode ? 'edit' : 'visibility'" />
-						{{ isEditMode ? 'View' : 'Edit' }}
-					</v-button>
+					<div class="mode-switcher">
+						<button
+							:class="['mode-button', { active: mode === 'view' }]"
+							:disabled="!canEdit"
+							@click="() => emit('update-mode', 'view')"
+						>
+							<v-icon name="visibility" />
+							View
+						</button>
+						<button
+							:class="['mode-button', { active: mode === 'edit' }]"
+							:disabled="!canEdit"
+							@click="() => emit('update-mode', 'edit')"
+						>
+							<v-icon name="edit" />
+							Edit
+						</button>
+					</div>
 				</div>
 
 				<!-- Follow Mode Toggle -->
 				<div class="follow-toggle-section">
 					<v-button
-						:kind="followMode ? 'primary' : 'secondary'"
 						@click="toggleFollowMode"
-						class="follow-toggle"
-						small
+						:class="['follow-toggle', { inactive: !followMode }]"
 					>
 						<v-icon :name="followMode ? 'gps_fixed' : 'gps_not_fixed'" />
 						{{ followMode ? 'Following' : 'Follow' }}
@@ -419,9 +418,8 @@ onMounted(() => {
 
 
 				<v-button
-					v-if="isEditMode"
 					:loading="saving"
-					:disabled="!hasEdits"
+					:disabled="isViewMode || !hasEdits"
 					@click="$emit('save')"
 					class="save-button"
 				>
@@ -548,9 +546,12 @@ onMounted(() => {
 	border: 1px solid var(--theme--border-color);
 	border-radius: 4px;
 	color: var(--theme--foreground);
-	padding: 0.5rem;
+	padding: 0.5rem 0.75rem;
 	font-size: 1.25rem;
 	font-weight: 600;
+	min-height: 44px;
+	height: 44px;
+	box-sizing: border-box;
 }
 
 .flow-name-input :deep(.v-input::placeholder) {
@@ -560,6 +561,13 @@ onMounted(() => {
 .flow-name-input :deep(.v-input:focus) {
 	border-color: var(--theme--primary);
 	box-shadow: 0 0 0 2px var(--theme--primary-25);
+}
+
+.flow-name-input :deep(.v-input:disabled) {
+	background: var(--theme--background);
+	border-color: var(--theme--border-color-subdued);
+	color: var(--theme--foreground);
+	cursor: default;
 }
 
 .flow-subtitle {
@@ -615,42 +623,95 @@ onMounted(() => {
 .mode-toggle-section {
 	display: flex;
 	align-items: center;
-	gap: 0.5rem;
-	padding: 0.25rem 0.75rem;
-	background: var(--theme--background-subdued);
+}
+
+.mode-switcher {
+	display: flex;
 	border-radius: var(--theme--border-radius);
+	overflow: hidden;
 	border: 1px solid var(--theme--border-color);
+	height: 44px;
+	background: var(--theme--background-subdued);
 }
 
-.mode-label {
-	font-size: 0.875rem;
+.mode-button {
+	flex: 1;
+	height: 44px;
+	border: none;
+	background: transparent;
 	color: var(--theme--foreground-subdued);
+	font-size: 0.875rem;
 	font-weight: 500;
-	min-width: 30px;
-}
-
-.mode-toggle {
+	cursor: pointer;
 	transition: all 0.2s ease;
+	border-right: 1px solid var(--theme--border-color);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.375rem;
+	padding: 0 0.75rem;
 }
 
-.mode-toggle:disabled {
+.mode-button:last-child {
+	border-right: none;
+}
+
+.mode-button:hover:not(:disabled) {
+	background: var(--theme--background-accent);
+	color: var(--theme--foreground);
+}
+
+.mode-button.active {
+	background: var(--theme--primary);
+	color: white;
+}
+
+.mode-button:disabled {
 	opacity: 0.5;
 	cursor: not-allowed;
+}
+
+.mode-button .v-icon {
+	font-size: 18px;
 }
 
 .follow-toggle-section {
 	display: flex;
 	align-items: center;
-	gap: 0.5rem;
-	padding: 0.25rem 0.75rem;
-	background: var(--theme--background-subdued);
-	border-radius: var(--theme--border-radius);
-	border: 1px solid var(--theme--border-color);
 }
 
 .follow-toggle {
+	background: var(--theme--primary);
+	color: white;
+	border-color: var(--theme--primary);
 	transition: all 0.2s ease;
+	min-height: 44px !important;
+	height: 44px !important;
+	font-size: 0.875rem !important;
+	gap: 0.375rem !important;
+	border-radius: var(--theme--border-radius) !important;
 }
+
+.follow-toggle.inactive {
+	background: var(--theme--background);
+	color: var(--theme--foreground);
+	border-color: var(--theme--border-color);
+}
+
+.follow-toggle:hover {
+	background: var(--theme--primary-accent);
+	border-color: var(--theme--primary-accent);
+}
+
+.follow-toggle :deep(.v-icon) {
+	font-size: 18px;
+}
+
+.save-button :deep(.v-icon) {
+	font-size: 18px;
+}
+
+
 
 .back-button {
 	color: var(--theme--foreground-subdued);
@@ -668,8 +729,13 @@ onMounted(() => {
 
 .save-button {
 	background: var(--theme--primary);
-	color: var(--theme--primary-foreground);
+	color: white;
 	border-color: var(--theme--primary);
+	min-height: 44px !important;
+	height: 44px !important;
+	font-size: 0.875rem !important;
+	gap: 0.375rem !important;
+	border-radius: var(--theme--border-radius) !important;
 }
 
 .save-button:hover {
