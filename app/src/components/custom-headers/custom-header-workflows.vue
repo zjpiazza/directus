@@ -190,7 +190,7 @@ onMounted(() => {
 </script>
 
 <template>
-	<div class="custom-header-visual-flow">
+	<div class="custom-header-workflows">
 		<div class="header-top">
 			<nav class="breadcrumbs">
 				<template v-for="(crumb, index) in breadcrumbs" :key="index">
@@ -434,7 +434,7 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.custom-header-visual-flow {
+.custom-header-workflows {
 	background: var(--theme--background);
 	border-bottom: 1px solid var(--theme--border-color);
 }

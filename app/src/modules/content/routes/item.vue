@@ -28,7 +28,7 @@ import ContentNotFound from './not-found.vue';
 import CustomBasic from '../../../components/custom-editors/custom-basic.vue';
 import CustomAdvanced from '../../../components/custom-editors/custom-advanced.vue';
 import CustomTabbed from '../../../components/custom-editors/custom-tabbed.vue';
-import VisualFlowBuilder from '../../../components/custom-editors/visual-flow-builder.vue';
+import WorkflowsBuilder from '../../../components/custom-editors/workflows-builder.vue';
 import ProcessMap from '../../../components/custom-editors/process-map.vue';
 
 // Import custom header components
@@ -36,7 +36,7 @@ import CustomHeaderBasic from '../../../components/custom-headers/custom-header-
 import CustomHeaderMinimal from '../../../components/custom-headers/custom-header-minimal.vue';
 import CustomHeaderAdvanced from '../../../components/custom-headers/custom-header-advanced.vue';
 import CustomHeaderProcessMap from '../../../components/custom-headers/custom-header-process-map.vue';
-import CustomHeaderVisualFlow from '../../../components/custom-headers/custom-header-visual-flow.vue';
+import CustomHeaderWorkflows from '../../../components/custom-headers/custom-header-workflows.vue';
 
 interface Props {
 	collection: string;
@@ -137,7 +137,7 @@ const customComponents = {
 	'custom-basic': CustomBasic,
 	'custom-advanced': CustomAdvanced,
 	'custom-tabbed': CustomTabbed,
-	'visual-flow-builder': VisualFlowBuilder,
+	'workflows-builder': WorkflowsBuilder,
 	'process-map': ProcessMap,
 };
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue';
+import { computed, ref, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useApi } from '@directus/composables';
 
@@ -30,6 +30,22 @@ const api = useApi();
 // Program dropdown functionality - use props when available, otherwise fetch
 const programs = ref<Array<{ id: string; name: string }>>(props.programs || []);
 const selectedProgram = ref<string | null>(props.selectedProgram);
+
+// Watch for changes in props
+watch(() => props.selectedProgram, (newValue: string | null | undefined) => {
+	if (newValue !== selectedProgram.value) {
+		selectedProgram.value = newValue || null;
+	}
+});
+
+watch(() => props.programs, (newPrograms: Array<{ id: string; name: string }> | undefined) => {
+	if (newPrograms && newPrograms.length > 0) {
+		programs.value = newPrograms.map((program) => ({
+			id: String(program.id),
+			name: program.name
+		}));
+	}
+});
 
 // Breadcrumbs
 const breadcrumbs = computed(() => {
@@ -62,11 +78,18 @@ async function fetchPrograms() {
 				limit: -1,
 			},
 		});
-		programs.value = response.data.data || [];
+		// Ensure all IDs are strings for consistency
+		programs.value = (response.data.data || []).map((program: any) => ({
+			id: String(program.id),
+			name: program.name
+		}));
+		
+		console.log('Fetched programs:', programs.value);
 		
 		// Set default program if available
 		if (programs.value.length > 0 && !selectedProgram.value && programs.value[0]) {
 			selectedProgram.value = String(programs.value[0].id);
+			console.log('Set default program:', selectedProgram.value);
 		}
 	} catch (error) {
 		console.error('Error fetching programs:', error);
@@ -135,12 +158,16 @@ onMounted(() => {
 					<v-select
 						v-model="selectedProgram"
 						:items="programs"
-						item-text="name"
-						item-value="id"
+						itemText="name"
+						itemValue="id"
 						placeholder="Select Program"
 						show-empty
 						@update:model-value="onProgramChange"
 					/>
+					<!-- Debug info -->
+					<div v-if="false" style="font-size: 10px; color: red;">
+						Selected: {{ selectedProgram }}, Programs: {{ programs.length }}
+					</div>
 				</div>
 			</div>
 		</div>

@@ -9,7 +9,7 @@ export async function up(knex: Knex): Promise<void> {
 			table.uuid('id').primary().defaultTo(knex.raw('gen_random_uuid()'));
 			table.string('name').notNullable();
 			table.text('description').nullable();
-			table.json('flow_data').nullable(); // Store nodes and edges as JSON
+			table.json('data').nullable(); // Store nodes and edges as JSON
 			table.string('status').defaultTo('draft'); // draft, active, archived
 			table.uuid('user_created').nullable();
 			table.uuid('user_updated').nullable();
@@ -40,14 +40,14 @@ export async function up(knex: Knex): Promise<void> {
 			accountability: 'all',
 			color: '#6644FF',
 			sort_field: 'date_created',
-			custom_item_component: 'visual-flow-builder' // Set our custom component
+			custom_item_component: 'workflows-builder' // Set our custom component
 		});
 	} else {
 		// Update existing collection to use our custom component
 		await knex('directus_collections')
 			.where('collection', 'visual_flows')
 			.update({
-				custom_item_component: 'visual-flow-builder'
+				custom_item_component: 'workflows-builder'
 			});
 	}
 

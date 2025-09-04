@@ -18,7 +18,7 @@ import CustomHeaderBasic from '../custom-headers/custom-header-basic.vue';
 import CustomHeaderMinimal from '../custom-headers/custom-header-minimal.vue';
 import CustomHeaderAdvanced from '../custom-headers/custom-header-advanced.vue';
 import CustomHeaderProcessMap from '../custom-headers/custom-header-process-map.vue';
-import CustomHeaderVisualFlow from '../custom-headers/custom-header-visual-flow.vue';
+import CustomHeaderWorkflows from '../custom-headers/custom-header-workflows.vue';
 
 interface Props {
 	collection: string;
@@ -134,7 +134,7 @@ const fetchCollections = async () => {
 // Handle workflow navigation
 const navigateToWorkflow = (workflowId: string) => {
 	// Update the field data to ensure current state is saved
-	updateField('flow_data', {
+	updateField('data', {
 		nodes: flowNodes.value,
 		edges: flowEdges.value,
 	});
@@ -221,7 +221,7 @@ const customHeaders = {
 	'custom-header-minimal': CustomHeaderMinimal,
 	'custom-header-advanced': CustomHeaderAdvanced,
 	'custom-header-process-map': CustomHeaderProcessMap,
-	'custom-header-visual-flow': CustomHeaderVisualFlow,
+	'custom-header-workflows': CustomHeaderWorkflows,
 };
 
 const customHeaderComponent = computed(() => {
@@ -264,11 +264,11 @@ onUnmounted(() => {
 
 // Initialize flow data from item
 watch(() => props.item, (newItem) => {
-	if (newItem?.flow_data) {
+	if (newItem?.data) {
 		try {
-			const flowData = typeof newItem.flow_data === 'string'
-				? JSON.parse(newItem.flow_data)
-				: newItem.flow_data;
+			const flowData = typeof newItem.data === 'string'
+				? JSON.parse(newItem.data)
+				: newItem.data;
 
 			flowNodes.value = flowData.nodes || [];
 			// Convert existing edges to step type and make them animated
@@ -299,7 +299,7 @@ watch([flowNodes, flowEdges], () => {
 		edges: flowEdges.value,
 	};
 
-	updateField('flow_data', JSON.stringify(flowData));
+	updateField('data', JSON.stringify(flowData));
 }, { deep: true });
 
 // Only fit view on initial load, not when nodes change
@@ -602,7 +602,7 @@ function updateOffPageTarget(workflowId: string) {
 		updateNodeData();
 		
 		// Save the changes
-		updateField('flow_data', {
+		updateField('data', {
 			nodes: flowNodes.value,
 			edges: flowEdges.value,
 		});
@@ -645,7 +645,7 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 	
 	// Save the changes to the field data after a short delay to ensure Vue Flow has updated
 	nextTick(() => {
-		updateField('flow_data', {
+		updateField('data', {
 			nodes: flowNodes.value,
 			edges: flowEdges.value,
 		});
@@ -657,7 +657,7 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 </script>
 
 <template>
-	<div class="visual-flow-builder-wrapper" :class="{ 'custom-header-active': shouldUseCustomHeader }">
+	<div class="workflows-builder-wrapper" :class="{ 'custom-header-active': shouldUseCustomHeader }">
 		<!-- Custom Header Integration -->
 		<component
 			v-if="shouldUseCustomHeader"
@@ -685,7 +685,7 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 			@toggle-follow-mode="toggleFollowMode"
 		/>
 
-		<div class="visual-flow-builder-editor" :class="{ 'hide-default-header': shouldUseCustomHeader }">
+		<div class="workflows-builder-editor" :class="{ 'hide-default-header': shouldUseCustomHeader }">
 		<!-- Header -->
 		<div class="editor-header">
 			<div class="title-section">
@@ -973,14 +973,14 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 </style>
 
 <style scoped>
-.visual-flow-builder-wrapper {
+.workflows-builder-wrapper {
 	width: 100%;
 	height: 100%;
 	display: flex;
 	flex-direction: column;
 }
 
-.visual-flow-builder-editor {
+.workflows-builder-editor {
 	height: 100%;
 	display: flex;
 	flex-direction: column;
@@ -1403,17 +1403,17 @@ function onEdgeUpdate(event: EdgeUpdateEvent) {
 }
 
 /* Custom header integration */
-.visual-flow-builder-wrapper.custom-header-active .hide-default-header .editor-header {
+.workflows-builder-wrapper.custom-header-active .hide-default-header .editor-header {
 	display: none;
 }
 
-.visual-flow-builder-wrapper.custom-header-active {
+.workflows-builder-wrapper.custom-header-active {
 	display: flex;
 	flex-direction: column;
 	height: 100vh;
 }
 
-.visual-flow-builder-wrapper.custom-header-active .visual-flow-builder-editor {
+.workflows-builder-wrapper.custom-header-active .workflows-builder-editor {
 	flex: 1;
 	height: auto;
 }

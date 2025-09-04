@@ -19,7 +19,7 @@ export default defineHook(({ init }, { database, logger }: any) => {
 					table.text('description').nullable();
 					table.json('nodes').nullable();
 					table.json('connections').nullable();
-					table.json('flow_data').nullable(); // Complete Vue Flow data for layout extension
+					table.json('data').nullable(); // Complete Vue Flow data for layout extension
 					table.string('status', 50).defaultTo('draft');
 					// Directus standard timestamp fields
 					table.timestamp('date_created').defaultTo(database.fn.now());
@@ -152,7 +152,7 @@ export default defineHook(({ init }, { database, logger }: any) => {
 					},
 					{
 						collection: 'visual_flows',
-						field: 'flow_data',
+						field: 'data',
 						special: null,
 						interface: 'input-code', // Use JSON code editor for now
 						options: JSON.stringify({ language: 'json', lineNumber: true }),
