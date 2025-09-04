@@ -1,6 +1,7 @@
 import type { AppExtensionConfigs, RefRecord } from '@directus/types';
 import { App, shallowRef, watch } from 'vue';
 import { getInternalDisplays, registerDisplays } from './displays';
+import { getInternalEditors, registerEditors } from './editors';
 import { getInternalInterfaces, registerInterfaces } from './interfaces';
 import { i18n } from './lang';
 import { getInternalLayouts, registerLayouts } from './layouts';
@@ -21,6 +22,7 @@ const extensions: RefRecord<AppExtensionConfigs> = {
 	panels: shallowRef([]),
 	operations: shallowRef([]),
 	themes: shallowRef([]),
+	editors: shallowRef([]),
 };
 
 const onHydrateCallbacks: (() => Promise<void>)[] = [];
@@ -46,6 +48,7 @@ export function registerExtensions(app: App): void {
 	const modules = getInternalModules();
 	const panels = getInternalPanels();
 	const operations = getInternalOperations();
+	const editors = getInternalEditors();
 	const themes = []; // Themes is the first extension type that doesn't rely on internally scoped extensions
 
 	if (customExtensions !== null) {
@@ -55,6 +58,7 @@ export function registerExtensions(app: App): void {
 		modules.push(...customExtensions.modules);
 		panels.push(...customExtensions.panels);
 		operations.push(...customExtensions.operations);
+		editors.push(...customExtensions.editors);
 		themes.push(...customExtensions.themes);
 	}
 
@@ -63,6 +67,7 @@ export function registerExtensions(app: App): void {
 	registerLayouts(layouts, app);
 	registerPanels(panels, app);
 	registerOperations(operations, app);
+	registerEditors(editors, app);
 	registerThemes(themes);
 
 	watch(
@@ -73,6 +78,7 @@ export function registerExtensions(app: App): void {
 			extensions.layouts.value = translate(layouts);
 			extensions.panels.value = translate(panels);
 			extensions.operations.value = translate(operations);
+			extensions.editors.value = translate(editors);
 		},
 		{ immediate: true },
 	);

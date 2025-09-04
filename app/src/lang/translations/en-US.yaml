@@ -1557,6 +1557,7 @@ field_options:
     preview_divider: Preview
     content_versioning_divider: Content Versioning
     enable_versioning: Enable Versioning
+    editor_extension: Custom Editor Extension
   directus_files:
     title: A unique title...
     description: An optional description...
@@ -1923,6 +1924,11 @@ interfaces:
   system-display-options:
     display-options: Display Options
     description: A modal for selecting options of a display
+  system-editor:
+    editor: Editor Extension
+    description: Select a custom editor extension for this collection
+    placeholder: Select an editor...
+    default: Default (Directus Form)
   list-m2m:
     many-to-many: Many to Many
     description: Select multiple related junction items

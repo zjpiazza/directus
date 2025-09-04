@@ -24,6 +24,8 @@ import { useRouter, useRoute } from 'vue-router';
 import ContentNavigation from '../components/navigation.vue';
 import VersionMenu from '../components/version-menu.vue';
 import ContentNotFound from './not-found.vue';
+import { useExtensionsStore } from '@/stores/extensions';
+import { storeToRefs } from 'pinia';
 
 interface Props {
 	collection: string;
@@ -99,6 +101,37 @@ const { templateData } = useTemplateData(collectionInfo, primaryKey);
 const { confirmLeave, leaveTo } = useEditsGuard(hasEdits, { compareQuery: ['version'] });
 const confirmDelete = ref(false);
 const confirmArchive = ref(false);
+
+// Editor extension logic
+const extensionsStore = useExtensionsStore();
+const { extensions: installedExtensions } = storeToRefs(extensionsStore);
+
+const availableEditorExtensions = computed(() => {
+	return installedExtensions.value.filter((extension: any) => {
+		// Only show enabled editor extensions
+		return extension.schema?.type === 'editor' && extension.meta?.enabled;
+	});
+});
+
+const activeEditorExtension = computed(() => {
+	// Only use editor extension if explicitly configured in collection meta
+	const configuredExtension = (collectionInfo.value?.meta as any)?.editor_extension;
+	
+	if (configuredExtension) {
+		const extension = availableEditorExtensions.value.find((ext: any) => ext.id === configuredExtension);
+		if (extension) {
+			// Return a mock editor config that matches what the template expects
+			return {
+				id: extension.id,
+				name: extension.schema?.name || extension.id,
+				component: `editor-${extension.id}`, // This will need to be dynamically loaded
+			};
+		}
+	}
+	
+	// Return null if no editor is configured - use default Directus form
+	return null;
+});
 
 const title = computed(() => {
 	if (te(`collection_names_singular.${props.collection}`)) {
@@ -731,7 +764,35 @@ function useCollectionRoute() {
 			<content-navigation :current-collection="collection" />
 		</template>
 
+		<!-- Editor Extension Component (if available) -->
+		<component
+			v-if="activeEditorExtension"
+			:is="activeEditorExtension.component"
+			:collection="collection"
+			:primary-key="primaryKey"
+			:is-new="isNew"
+			:item="item"
+			:edits="edits"
+			:fields="fields"
+			:loading="loading"
+			:saving="saving"
+			:validation-errors="validationErrors"
+			:current-version="currentVersion"
+			:collection-info="collectionInfo"
+			:permissions="permissions"
+			@update:edits="edits = $event"
+			@save="saveAndStay"
+			@save-and-quit="saveAndQuit"
+			@save-and-add-new="saveAndAddNew"
+			@save-as-copy="saveAsCopyAndNavigate"
+			@delete="deleteAndQuit"
+			@archive="toggleArchive"
+			@refresh="refresh"
+		/>
+
+		<!-- Default Directus Form (fallback) -->
 		<v-form
+			v-else
 			ref="form"
 			v-model="edits"
 			:autofocus="isNew"

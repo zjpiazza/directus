@@ -40,3 +40,7 @@ columns:
   sort_field:
     type: string
     length: 'MAX_COLUMN_NAME_LENGTH'
+  editor_extension:
+    type: string
+    length: 255
+    nullable: true

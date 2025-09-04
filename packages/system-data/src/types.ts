@@ -42,6 +42,7 @@ export type CollectionMeta = {
 	sort: number | null;
 	group: string | null;
 	collapse: 'open' | 'closed' | 'locked';
+	editor_extension: string | null;
 };
 
 export type BaseCollectionMeta = Pick<

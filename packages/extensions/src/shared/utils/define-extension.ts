@@ -1,6 +1,7 @@
 import type { Prettify } from '@directus/types';
 import type {
 	DisplayConfig,
+	EditorConfig,
 	EndpointConfig,
 	HookConfig,
 	InterfaceConfig,
@@ -62,5 +63,11 @@ export function defineOperationApp<Custom extends CustomConfig<OperationAppConfi
 export function defineOperationApi<Options = Record<string, unknown>>(
 	config: OperationApiConfig<Options>,
 ): OperationApiConfig<Options> {
+	return config;
+}
+
+export function defineEditor<Custom extends CustomConfig<EditorConfig>>(
+	config: ExtendedConfig<EditorConfig, Custom>,
+): ExtendedConfig<EditorConfig, Custom> {
 	return config;
 }

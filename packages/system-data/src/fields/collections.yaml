@@ -79,9 +79,9 @@ fields:
           meta:
             interface: input
             width: half
-            required: true
             options:
               placeholder: $t:field_options.directus_collections.translation_placeholder
+
         - field: singular
           name: $t:field_options.directus_collections.singular_unit
           type: string
@@ -98,6 +98,12 @@ fields:
             width: half
             options:
               placeholder: $t:field_options.directus_collections.translation_placeholder
+    width: full
+
+  - field: editor_extension
+    interface: system-editor
+    options:
+      placeholder: $t:interfaces.system-editor.placeholder
     width: full
 
   - field: preview_divider

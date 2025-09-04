@@ -12,6 +12,7 @@ import type {
 import type { EndpointConfig } from './endpoints.js';
 import type { HookConfig } from './hooks.js';
 import type { DisplayConfig } from './displays.js';
+import type { EditorConfig } from './editors.js';
 import type { InterfaceConfig } from './interfaces.js';
 import type { LayoutConfig } from './layouts.js';
 import type { ModuleConfig } from './modules.js';
@@ -26,6 +27,7 @@ export type AppExtensionConfigs = {
 	panels: PanelConfig[];
 	themes: Theme[];
 	operations: OperationAppConfig[];
+	editors: EditorConfig[];
 };
 
 export const SplitEntrypoint = z.object({
