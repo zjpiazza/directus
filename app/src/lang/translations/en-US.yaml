@@ -1537,13 +1537,6 @@ field_options:
     do_not_track_anything: Do Not Track Anything
     collection_setup: Collection Setup
     note_placeholder: A description of this collection...
-    default_editor: Default Directus Editor
-    custom_editor_basic: Custom Basic Editor
-    custom_editor_advanced: Custom Advanced Editor
-    custom_editor_tabbed: Custom Tabbed Editor
-    visual_flow_builder: Visual Flow Builder
-    process_map: Process Map
-    custom_component_placeholder: Select a custom component for item editing...
     hidden_label: Hide within the App
     singleton: Treat as single object
     language: Language
