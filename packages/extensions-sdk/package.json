@@ -1,14 +1,14 @@
 {
-	"name": "@directus/extensions-sdk",
-	"version": "16.0.1",
+	"name": "@zjpiazza/directus-extensions-sdk",
+	"version": "16.0.12",
 	"description": "A toolkit to develop extensions to extend Directus",
 	"homepage": "https://directus.io",
 	"repository": {
 		"type": "git",
-		"url": "https://github.com/directus/directus.git",
+		"url": "https://github.com/zjpiazza/directus.git",
 		"directory": "packages/extensions-sdk"
 	},
-	"funding": "https://github.com/directus/directus?sponsor=1",
+	"funding": "https://github.com/zjpiazza/directus?sponsor=1",
 	"license": "MIT",
 	"author": "Nicola Krumschmidt",
 	"type": "module",

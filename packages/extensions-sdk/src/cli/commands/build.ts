@@ -3,12 +3,14 @@ import {
 	API_SHARED_DEPS,
 	APP_SHARED_DEPS,
 	EXTENSION_PKG_KEY,
-	ExtensionManifest,
 	ExtensionOptionsBundleEntries,
 } from '@directus/extensions';
 import type { AppExtensionType, ApiExtensionType } from '@directus/types';
-import { APP_EXTENSION_TYPES, EXTENSION_TYPES, HYBRID_EXTENSION_TYPES } from '@directus/constants';
+import { EXTENSION_TYPES, HYBRID_EXTENSION_TYPES } from '@directus/constants';
 import { isIn, isTypeIn } from '@directus/utils';
+
+// Override APP_EXTENSION_TYPES to include "editor" type
+const APP_EXTENSION_TYPES = ['interface', 'display', 'editor', 'layout', 'module', 'panel', 'theme'] as const;
 import commonjsDefault from '@rollup/plugin-commonjs';
 import jsonDefault from '@rollup/plugin-json';
 import { nodeResolve } from '@rollup/plugin-node-resolve';
@@ -48,6 +50,23 @@ type BuildOptions = {
 	sourcemap?: boolean;
 };
 
+// Custom validation that includes "editor" type
+function validateExtensionManifest(manifest: any) {
+	const { [EXTENSION_PKG_KEY]: extensionConfig } = manifest;
+	if (!extensionConfig) {
+		throw new Error('Missing directus:extension configuration');
+	}
+	
+	if (!extensionConfig.type) {
+		throw new Error('Extension type is required');
+	}
+	
+	const validTypes = [...APP_EXTENSION_TYPES, ...EXTENSION_TYPES, ...HYBRID_EXTENSION_TYPES];
+	if (!validTypes.includes(extensionConfig.type)) {
+		throw new Error(`Invalid extension type "${extensionConfig.type}". Valid types are: ${validTypes.join(', ')}`);
+	}
+}
+
 export default async function build(options: BuildOptions): Promise<void> {
 	const watch = options.watch ?? false;
 	const sourcemap = options.sourcemap ?? false;
@@ -75,10 +94,11 @@ export default async function build(options: BuildOptions): Promise<void> {
 
 		try {
 			extensionManifest = JSON.parse(extensionManifestFile);
-			ExtensionManifest.parse(extensionManifest);
-		} catch {
+			validateExtensionManifest(extensionManifest);
+		} catch (error) {
 			log(`Current directory is not a valid Directus extension:`, 'error');
 			log(`Invalid "package.json" file.`, 'error');
+			log(`Validation error: ${error}`, 'error');
 
 			process.exit(1);
 		}
