@@ -1,55 +1,133 @@
 @mixin form-grid {
-	display: grid;
-	grid-template-columns: [start] minmax(0, 1fr) [half] minmax(0, 1fr) [full];
-	gap: var(--theme--form--row-gap) var(--theme--form--column-gap);
+  display: grid;
+  /* Use named lines from the second file for better targeting */
+  grid-template-columns: [start] minmax(0, 1fr) [half] minmax(0, 1fr) [full];
+  gap: var(--theme--form--row-gap) var(--theme--form--column-gap);
 
-	/* stylelint-disable-next-line */
-	&.with-fill {
-		grid-template-columns:
-			[start] minmax(0, var(--form-column-max-width)) [half] minmax(0, var(--form-column-max-width))
-			[full] 1fr [fill];
-	}
+  /* Preserve with-fill behavior from the second file */
+  /* stylelint-disable-next-line */
+  &.with-fill {
+    grid-template-columns:
+      [start] minmax(0, var(--form-column-max-width))
+      [half] minmax(0, var(--form-column-max-width))
+      [full] 1fr [fill];
+  }
 
-	.type-label {
-		margin-block-end: 8px;
-	}
+  /* Keep the earlier mixin’s semantics but update to logical properties */
+  .type-label {
+    margin-block-end: 8px;
+  }
 
-	.field {
-		grid-column: start / fill;
+  /* Full-width fields span entire grid; on large screens, stop at [full] */
+  .field {
+    grid-column: start / fill;
 
-		@media (min-width: 960px) {
-			grid-column: start / full;
-		}
-	}
+    @media (min-width: 960px) {
+      grid-column: start / full;
+    }
+  }
 
-	.half,
-	.half-left,
-	.half-space {
-		grid-column: start / fill;
+  /* Half variants span full width on small screens, split at >=960px */
+  .half,
+  .half-left,
+  .half-space {
+    grid-column: start / fill;
 
-		@media (min-width: 960px) {
-			grid-column: start / half;
-		}
-	}
+    @media (min-width: 960px) {
+      grid-column: start / half;
+    }
+  }
 
-	.half + .half,
-	.half-right {
-		grid-column: start / fill;
+  .half + .half,
+  .half-right {
+    grid-column: start / fill;
 
-		@media (min-width: 960px) {
-			grid-column: half / full;
-		}
-	}
+    @media (min-width: 960px) {
+      grid-column: half / full;
+    }
+  }
 
-	.full {
-		grid-column: start / fill;
+  /* Full alias */
+  .full {
+    grid-column: start / fill;
 
-		@media (min-width: 960px) {
-			grid-column: start / full;
-		}
-	}
+    @media (min-width: 960px) {
+      grid-column: start / full;
+    }
+  }
 
-	.fill {
-		grid-column: start / fill;
-	}
+  /* Fill alias explicitly reaches the [fill] track */
+  .fill {
+    grid-column: start / fill;
+  }
+}
+
+@mixin fields-grid {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  gap: var(--theme--form--row-gap) var(--theme--form--column-gap);
+
+  &.with-fill {
+    grid-template-columns:
+      repeat(12, minmax(0, var(--form-column-max-width))) [fill];
+  }
+
+  .sixth {
+    grid-column: span 2;
+
+    @media (max-width: 959px) {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .fifth {
+    grid-column: span 2.4;
+
+    @media (max-width: 959px) {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .quarter {
+    grid-column: span 3;
+
+    @media (max-width: 959px) {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .third {
+    grid-column: span 4;
+
+    @media (max-width: 959px) {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .half,
+  .half-left,
+  .half-space {
+    grid-column: span 6;
+
+    @media (max-width: 959px) {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .half + .half,
+  .half-right {
+    grid-column: span 6;
+
+    @media (max-width: 959px) {
+      grid-column: 1 / -1;
+    }
+  }
+
+  .full {
+    grid-column: 1 / -1;
+  }
+
+  .fill {
+    grid-column: 1 / -1;
+  }
 }
