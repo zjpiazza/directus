@@ -186,9 +186,8 @@ function discardAndLeave() {
 }
 
 .fields {
-	max-inline-size: 800px;
-	margin-block-end: 48px;
 	max-width: 100%;
+	margin-block-end: 48px;
 }
 
 .header-icon {

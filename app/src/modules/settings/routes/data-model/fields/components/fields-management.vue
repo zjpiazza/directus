@@ -125,7 +125,7 @@ async function setNestedSort(updates?: Field[]) {
 		</div>
 
 		<draggable
-			class="field-grid"
+			class="fields-grid"
 			:model-value="usableFields.filter((field) => isNil(field?.meta?.group))"
 			handle=".drag-handle"
 			:group="{ name: 'fields' }"
@@ -236,18 +236,6 @@ async function setNestedSort(updates?: Field[]) {
 .field-select:deep(.fields-nested-grid) {
 	margin: var(--theme--form--row-gap) 0;
 	width: 100%;
-}
-
-.field-select:deep(.field-grid) {
-	gap: 0;
-}
-
-.field-select:deep(.field-grid.group.full.nested) {
-	margin: 4px 0;
-
-	.field-select {
-		margin: 4px;
-	}
 }
 
 .add-field {

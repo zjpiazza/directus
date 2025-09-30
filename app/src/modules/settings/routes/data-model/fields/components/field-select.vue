@@ -358,6 +358,18 @@ const tFieldType = (type: string) => t(type === 'geometry' ? 'geometry.All' : ty
 	grid-template-columns: repeat(12, 1fr);
 	gap: var(--theme--form--row-gap) var(--theme--form--column-gap);
 	width: 100%;
+	.sixth {
+		grid-column: span 2;
+		@media (max-width: 959px) {
+			grid-column: 1 / -1;
+		}
+	}
+	.fifth {
+		grid-column: span 2.4;
+		@media (max-width: 959px) {
+			grid-column: 1 / -1;
+		}
+	}
 	.quarter {
 		grid-column: span 3;
 		@media (max-width: 959px) {
@@ -396,11 +408,6 @@ const tFieldType = (type: string) => t(type === 'geometry' ? 'geometry.All' : ty
 			border: var(--theme--border-width) solid var(--theme--primary-subdued);
 		}
 	}
-}
-
-.full,
-.fill {
-	grid-column: 1 / span 2;
 }
 
 .v-input.monospace {
